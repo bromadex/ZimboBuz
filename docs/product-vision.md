@@ -13,6 +13,19 @@ One Zimbabwean business platform with every feature competitors offer (see [erp-
 - **Online store:** template-based, connected to ERP stock and prices, takes ZiG/USD and Paynow.
 - No customer-facing mobile app.
 
+### Website and store design direction
+Websites and stores must look as modern as possible and use motion throughout.
+
+- **Each of the ~5 templates has its own motion style**, e.g. corporate (calm fades and slides), bold (large type reveals, parallax), product/store (image zooms, card lifts), creative (scroll-driven storytelling).
+- **Hero animations:** animated backgrounds (like the Bromadex "power grid" network canvas), animated headlines, subtle video or gradient motion, recoloured automatically to the company's brand colours.
+- **Scroll motion:** sections and cards reveal as you scroll, staggered lists, parallax layers, sticky scroll-driven sections, animated number counters.
+- **Page transitions:** smooth transitions between pages and shared-element transitions (product card expands into the product page).
+- **Micro-interactions:** buttons press in, cards lift on touch/hover, add-to-cart flies to the cart icon, animated toasts, loading skeletons instead of spinners.
+- **Store motion:** image galleries with swipe and zoom, quantity steppers that animate, cart drawer slides in, animated checkout/quote progress.
+- **Motion setting per company:** Off / Subtle / Rich, editable in the customisation interface; drag-and-drop blocks each carry an optional entrance animation.
+- **Fast on cheap phones and expensive data:** animations use CSS transforms and opacity (GPU-friendly), pause when off screen or in a background tab, images are lazy-loaded and compressed, and the site stays fully usable before animation scripts load.
+- **Accessibility:** respect the device's "reduce motion" setting (already done in Bromadex's motion code); nothing important is shown only through animation.
+
 ### 2. ERP (admin side, for the company's staff)
 - Web app plus mobile apps, used by owners and staff only.
 - **Modules are chosen by the company** (POS, inventory, payroll, etc.).
@@ -135,6 +148,7 @@ What the owner handles:
 - Interface is English only.
 - Mobile apps are for staff (ERP) only, not for customers.
 - PWA for everyone; branded APK/iOS builds on a premium plan.
+- Websites and stores are as modern as possible, with motion throughout (per-template motion styles, company-controlled intensity, fast on low-end phones).
 - Build on the Bromadex and Bravura codebases, converted to multi-tenant, rather than starting from scratch.
 
 ## Open questions
