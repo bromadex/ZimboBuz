@@ -17,6 +17,7 @@ A shop with 1–5 tills can sign up, set up its products, sell in ZiG and USD (c
 | Sales and invoicing | Quotes, invoices, payments, credit book, customer statements |
 | Payments | Paynow (EcoCash, OneMoney, InnBucks, cards), payment links and QR codes, reconciliation |
 | Website and store | 2 templates at launch (5 by end of Wave 2), drag-and-drop page editor, store with Buy and Add-to-quote, motion presets |
+| Platform patterns (from ERPNext/Odoo review) | Locked document lifecycle, naming series, activity panel and scheduled activities, Connections panel and smart buttons, list and card views, field-level permissions, data import tool, customer portal |
 | Reports | Daily sales by currency and payment method, cash-up report, stock on hand and valuation, low stock, debtors ageing |
 
 ## Out of scope (later waves)
@@ -26,6 +27,8 @@ A shop with 1–5 tills can sign up, set up its products, sell in ZiG and USD (c
 - CRM pipeline, projects, manufacturing, helpdesk (Wave 3)
 - Industry modules, AI assistant, IoT (Wave 4)
 - Branded APK and iOS builds (after Release 1; PWA only at launch)
+- Pricing rules engine, print format designer, custom fields, workflow designer, supplier portal, loyalty and gift cards (Wave 2)
+- ZimERP Studio no-code builder (Wave 3); calendar, pivot, graph, map and timeline views (later waves)
 
 ## Features and acceptance criteria
 
@@ -97,6 +100,38 @@ A shop with 1–5 tills can sign up, set up its products, sell in ZiG and USD (c
 
 ### P12. Audit log
 - Every create, edit, void, refund, price change and permission change logged with user, time, before and after.
+
+### P13. Document lifecycle and numbering
+- Financial and stock documents (sales, invoices, credit notes, payments, stock movements, stock takes) follow Draft → Submitted → Cancelled, or Amended as a new linked version.
+- Submitted documents are locked: no edits, only cancel (with reason, reversing entries) or amend.
+- Naming series configurable per document type and branch (e.g. `INV-HRE-2026-0001`); offline devices use a device prefix so numbers never clash.
+- **Done when:** database rules (not just the UI) reject any edit to a submitted document, and cancel/amend produce correct reversing entries in tests.
+
+### P14. Activity panel on every record
+- Messages, internal notes, followers and scheduled activities (call, meeting, to-do with due date and assignee) on customers, suppliers, products, quotes, invoices and orders.
+- Activity reminders in the notification centre and optionally by WhatsApp.
+- System events (created, submitted, paid, cancelled) appear in the same timeline.
+- **Done when:** a scheduled activity notifies its assignee on the due date, and every status change shows in the record's timeline.
+
+### P15. Connections panel and smart buttons
+- Every document shows linked records with counts (e.g. quote → invoice → payments → returns; customer → 5 invoices, 2 open quotes).
+- **Done when:** clicking a count opens the filtered list of exactly those records.
+
+### P16. List and card views
+- Every module offers a list view (sort, filter, group, saved filters, export) and a card view; views remember the user's last choice.
+
+### P17. Field-level permissions
+- Sensitive fields (cost price, margin, supplier price, customer credit limit) hidden or read-only per role.
+- **Done when:** hidden fields are excluded from screens, exports, reports and the API for that role, proved by tests.
+
+### P18. Data import tool
+- Downloadable Excel/CSV templates for products, customers, suppliers, opening stock and opening balances; validation with row-by-row error report before anything is saved.
+- **Done when:** a 2,000-product spreadsheet with some errors imports the valid rows only after the user confirms, and lists each error with its row number.
+
+### P19. Customer portal
+- Customers log in (or open a secure link) to view quotes, invoices and statements, and pay via Paynow.
+- Portal users are free and never count towards the company's user limit.
+- **Done when:** a customer sees only their own documents, verified by isolation tests.
 
 ## Supported devices (Release 1)
 See [Supported devices](product-vision.md#supported-devices).

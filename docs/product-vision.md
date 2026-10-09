@@ -9,6 +9,7 @@ Status: brainstorming. This records decisions made so far; nothing here is built
 - [release-1-spec.md](release-1-spec.md) — Release 1 (Wave 1) scope and acceptance criteria
 - [architecture.md](architecture.md) — multi-tenancy, domains, website builder, offline sync, testing, disaster recovery, API
 - [financial-plan.md](financial-plan.md) — startup costs, running costs, break-even, funding
+- [erpnext-odoo-review.md](erpnext-odoo-review.md) — patterns adopted from ERPNext and Odoo (ideas only, no code)
 
 ## Pitch
 
@@ -285,7 +286,8 @@ Modules come from the consolidated list in [erp-feature-research.md](erp-feature
 - **Finance and people:** full accounting, budgets, fixed assets, expenses, payroll (PAYE, NSSA, AIDS Levy, ZIMDEF), tax returns, ZIMRA fiscalisation
 - **Operations:** manufacturing, projects, quality, assets and maintenance, helpdesk, subscription billing
 - **Industry:** healthcare, microfinance, hospitality, garages, fleet and logistics, farming
-- **Platform:** website builder, online store, reports and dashboards, integrations and API, AI features
+- **Platform:** website builder, online store, customer and supplier portals, reports and dashboards, integrations and API, AI features, **ZimERP Studio** (no-code custom fields, screens, reports and automations; Pro and Enterprise)
+- **Additional apps (Waves 3–4, from the Odoo review):** e-signatures, appointments booking, field service, rental, events and ticketing, surveys, eLearning, website live chat, marketing automation, AI document capture
 
 ### Proposed release waves (idea, not decided)
 1. Core, POS, inventory, sales and invoicing, Paynow, website and store templates
@@ -305,7 +307,7 @@ The mobile app focuses on daily tasks; heavy work (full accounting, payroll runs
 
 ## Pricing (proposal, to validate with pilot customers)
 
-Benchmark: Unicorn Solutions publishes $200 / $500 / $1,000 per month. All figures below are USD and are a starting proposal.
+Benchmarks: Unicorn Solutions publishes $200 / $500 / $1,000 per month; Odoo Standard is about $25–39 per user per month (10 users ≈ $250–390), so ZimERP Growth at $79 for 15 users is a strong comparison. All figures below are USD and are a starting proposal.
 
 **Structure:** a plan per company with users and modules included, plus add-ons. Pure per-user pricing scares small shops; pure per-module pricing is confusing.
 
@@ -319,8 +321,13 @@ Benchmark: Unicorn Solutions publishes $200 / $500 / $1,000 per month. All figur
 | Pro | $199 | 50 | All standard modules | 5 branches, branded Android app, API, custom workflows |
 | Enterprise | From $499 | Unlimited | All, including industry modules | Branded iOS app, dedicated setup, SLA, dedicated database, on-premise option |
 
+### User types
+- **Full users:** count towards the plan's user limit.
+- **Light users:** about $1–2/month each (or a free allowance per plan), for staff who only approve, request leave, view reports or use self-service in the staff app.
+- **Portal users (customers and suppliers):** always free, never counted.
+
 ### Add-ons (per month)
-- Extra user: $3–5
+- Extra full user: $3–5
 - Extra standard module: $10–20
 - Industry module (healthcare, microfinance, mining and construction, etc.): $30–50
 - Extra branch: $10
@@ -717,6 +724,7 @@ What the owner handles:
 - Legal: company registration, terms of service, data protection
 
 ## Decisions log
+- Adopt the ERPNext and Odoo patterns listed in [erpnext-odoo-review.md](erpnext-odoo-review.md) (ideas only); light users and free portal users in pricing.
 - Payments: Paynow first; each company connects its own Paynow account so money goes straight to them and ZimERP never holds funds.
 - Product name is **ZimERP** (formerly ZimboBuz). Check the name is free (ZIPO trademark search, `.co.zw`/`.com` domains, company name) before registering it.
 - Exchange rates are set by each company (no automatic RBZ feed).

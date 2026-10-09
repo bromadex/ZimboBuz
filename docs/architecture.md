@@ -40,6 +40,17 @@ This is enforced in one SQL function (e.g. `can(company_id, 'pos.refund')`) used
 ### Isolation tests
 An automated test suite creates two companies and checks that every table, storage bucket, API route and sync rule refuses cross-company access. It runs on every change and blocks deployment on failure.
 
+## Document model (patterns from ERPNext and Odoo)
+
+- **Lifecycle:** financial and stock documents have `docstatus` Draft (0) → Submitted (1) → Cancelled (2); amending creates a new document linked to the cancelled one (`amended_from`). Triggers reject updates to submitted rows; cancel posts reversing ledger and stock entries.
+- **Naming series:** `naming_series` table per company, document type and branch with a pattern (e.g. `INV-{BRANCH}-{YYYY}-{####}`); numbers allocated server-side, or from a per-device block for offline POS.
+- **Activity panel:** shared `record_messages`, `record_followers` and `record_activities` tables keyed by (`company_id`, `doctype`, `record_id`) so every module gets chatter, notes, followers and scheduled activities without its own tables; system events written by triggers.
+- **Connections and smart buttons:** a registry declaring which document types link to which (e.g. invoice → payments via `invoice_id`), used to build counts and filtered lists generically.
+- **Field-level permissions:** sensitive columns exposed only through role-aware views/functions, so hidden fields are absent from API responses, exports and reports, not just hidden in the UI.
+- **Views:** a generic list/card view component driven by per-doctype metadata (columns, filters, card layout), later extended with calendar, pivot, graph, map and timeline.
+- **Portal users:** a separate `portal_contacts` identity linked to a customer or supplier, with RLS limiting them to their own documents; never counted as plan users.
+- **ZimERP Studio (Wave 3):** custom fields stored as metadata plus a `custom` JSONB column per table, rendered by the same metadata-driven forms and views.
+
 ## Domain routing
 
 - Next.js middleware reads the request hostname and resolves the company from `company_domains` (cached).
