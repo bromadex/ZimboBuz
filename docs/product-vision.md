@@ -107,10 +107,45 @@ So the switch from Vercel + Supabase to Azure is a migration, not a rewrite:
 - **Rehearse the move:** before launch, restore a copy of the database and files on Azure, run the full test suite there and measure speed from Harare and Bulawayo.
 
 #### Phase 3: local hosting (Enterprise, on request)
-For customers requiring data in Zimbabwe: a private install in a Zimbabwean data centre, or on the customer's own servers with a licence key.
+For customers requiring data in Zimbabwe: a private install in a Zimbabwean data centre, or on the customer's own servers with a licence key. See **On-premise deployment** below.
 
 #### Not offered
 No plain cPanel web hosting at launch; customer websites are hosted as part of ZimboBuz.
+
+### On-premise deployment (client's own server)
+
+Supabase is open source (Apache 2.0) and self-hostable, so building on Supabase does not prevent clients from keeping their data on their own servers.
+
+#### How it works
+- The client's server runs **self-hosted Supabase in Docker** (database, logins, storage, server functions) plus the **ZimboBuz app as a Node.js/Docker service**.
+- The **same SQL migrations, security rules and functions** as the cloud version: one product, not a separate fork.
+- This only works if the app avoids hosting-provider-only features (see "Building for the move").
+
+#### What changes compared with cloud
+| Area | Cloud | Client's own server |
+|---|---|---|
+| Backups | Automatic | Must be set up: daily backups plus an off-server copy |
+| Updates | Deployed once for everyone | Each install updated separately, via an automated update script |
+| Security | Managed by the provider | Firewall, SSL, OS patches and access control are ZimboBuz's or the client's IT team's job (agreed in the contract) |
+| Power and internet | Data-centre grade | Needs a UPS or generator and a stable connection; load-shedding is a real risk |
+| Extras | Full managed dashboard and features | A few managed-only extras (e.g. database branching) are unavailable; core features work |
+
+#### Protecting closed-source code
+On a client's server, their IT staff can access the database, including SQL functions and security rules, and the minified app code. Protection:
+1. **Licence agreement:** no copying, reverse-engineering or resale, with penalties.
+2. **Licence key** checked regularly, with expiry tied to payment.
+3. **Keep the most valuable logic off the client's server:** run it in a compiled service or call ZimboBuz cloud services for it (e.g. ZIMRA fiscalisation, payment integrations, AI).
+4. **Enterprise pricing** that covers the risk and extra support.
+
+#### Responsibilities (set in the contract)
+- **ZimboBuz:** installation, updates, licence management, application support, remote monitoring.
+- **Client:** server hardware, power backup, internet, physical security, and either their own IT for OS/network or a paid ZimboBuz managed-service add-on.
+- **Remote access** for ZimboBuz support (VPN or secure tunnel) agreed up front.
+
+#### Server requirements (rough guide, size to real users and data)
+- Linux server or virtual machine with Docker
+- About 4–8 CPU cores, 16 GB RAM, fast SSD storage for a mid-sized company
+- UPS, off-site backups, remote access for support
 
 ### Domain sales (feeds website, ERP and Microsoft 365 setup)
 ZimboBuz sells domains, and the domain becomes the backbone of each company's setup.
@@ -266,6 +301,7 @@ What the owner handles:
 - Websites and stores are as modern as possible, with motion throughout (per-template motion styles, company-controlled intensity, fast on low-end phones).
 - `.co.zw` domains are registered through name.co.zw, with nameservers pointed to ZimboBuz DNS.
 - ZimboBuz sells domains; the domain drives one-click setup of the website, store, ERP and Microsoft 365.
+- Enterprise clients can run ZimboBuz on their own servers using self-hosted Supabase, protected by licence agreement, licence key and keeping key logic in ZimboBuz cloud services.
 - Build on Vercel + Supabase; move to Azure (Johannesburg) for commercial launch; code stays portable (standard PostgreSQL, adapters for provider services). No plain cPanel hosting.
 - Email hosting is Microsoft 365, resold through the CSP programme, with each company in its own tenant.
 - ZimboBuz is proprietary and closed source; no GPL/AGPL code is copied in.
