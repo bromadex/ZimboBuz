@@ -1,0 +1,3 @@
+node_modules/
+docs/pdf-build/_render_*.html
+docs/pdf-build/*.pdf

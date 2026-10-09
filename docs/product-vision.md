@@ -4,6 +4,7 @@ Status: brainstorming. This records decisions made so far; nothing here is built
 
 
 ## Document map
+- **[ZimERP-master-plan.md](ZimERP-master-plan.md) / [PDF](ZimERP-master-plan.pdf) — the consolidated master plan; it supersedes the notes below where they differ**
 - [product-vision.md](product-vision.md) — this document: what ZimERP is and how the business runs
 - [erp-feature-research.md](erp-feature-research.md) — competitor research and consolidated features
 - [release-1-spec.md](release-1-spec.md) — Release 1 (Wave 1) scope and acceptance criteria
