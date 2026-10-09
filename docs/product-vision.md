@@ -35,6 +35,74 @@ The home-screen name of an app is fixed at build time, so one shared store app c
 
 Inside every version, the company's logo, colours, modules and features load after login.
 
+## Module catalogue
+
+Modules come from the consolidated list in [erp-feature-research.md](erp-feature-research.md). Each module has its own feature toggles.
+
+- **Core (always on):** companies and branches, users and roles, currencies and company-set exchange rates, customers, suppliers, products, basic accounting
+- **Commerce:** POS, sales and invoicing, inventory and warehouses, purchasing, CRM and campaigns (SMS, email, WhatsApp)
+- **Finance and people:** full accounting, budgets, fixed assets, expenses, payroll (PAYE, NSSA, AIDS Levy, ZIMDEF), tax returns, ZIMRA fiscalisation
+- **Operations:** manufacturing, projects, quality, assets and maintenance, helpdesk, subscription billing
+- **Industry:** healthcare, microfinance, hospitality, garages, fleet and logistics, farming
+- **Platform:** website builder, online store, reports and dashboards, integrations and API, AI features
+
+### Proposed release waves (idea, not decided)
+1. Core, POS, inventory, sales and invoicing, Paynow, website and store templates
+2. Purchasing, payroll, tax returns, ZIMRA fiscalisation
+3. CRM, projects, manufacturing, helpdesk
+4. Industry modules, AI features, IoT
+
+Each wave ships and earns money while the next is built.
+
+## Staff app scope (idea, not decided)
+The mobile app focuses on daily tasks; heavy work (full accounting, payroll runs, website editing, large reports) stays on the web app.
+- POS, offline-capable, on low-cost Android phones with Bluetooth receipt printers
+- Stock counts and camera barcode scanning
+- Approvals: purchase orders, leave, expenses
+- Owner dashboard: sales by currency, cash, debtors, low stock
+- Notifications: low stock, large sales, till short at close
+
+## Pricing ideas (not decided)
+- Free: core plus one module, one user
+- Roughly $10–20/month per extra module
+- Bundles (e.g. Retail, Manufacturing, Hospitality) cheaper than separate modules
+- Once-off setup fee for "done for you" (domain, design, data import)
+- Premium tier for branded APK and iOS apps
+- Prices shown in USD and ZiG, payable monthly by EcoCash or card
+- Benchmark: Unicorn Solutions charges $200–1,000/month
+
+### Other revenue ideas
+- Small fee per Paynow/EcoCash transaction
+- Hardware resale: receipt printers, barcode scanners
+- Data migration and custom development
+- Referral fees from lenders using sales data (with the company's consent)
+
+## Go-to-market ideas
+- Pilot: 5–10 businesses free for a month in exchange for feedback and testimonials
+- Accountants and bookkeepers as resellers (commission or free access)
+- Commission-based field agents who sign up and set up shops
+- WhatsApp for marketing and support
+- Talk to 15–20 business owners before building each wave
+
+## Differentiator ideas
+- ZiG/USD split tender and change-shortage handling (store credit, vouchers, mobile-money refunds)
+- Offline-first operation for load-shedding
+- WhatsApp receipts, invoices, debt reminders and daily owner summaries
+- Diaspora purchasing: relatives abroad pay, family collects in store
+- Supplier ordering network: reorder from wholesalers inside the app
+- Sales history to support loan applications
+- Plain-language AI assistant ("how much did I make this week?")
+
+## How it gets built
+Development is done by AI (Claude), in small testable steps, each with automated tests, reviewed and tried by the owner before moving on. Decisions are recorded in this folder so later sessions keep context.
+
+What the owner handles:
+- Accounts and credentials: Paynow merchant, ZIMRA fiscalisation registration and software approval, WhatsApp Business API, domains, hosting (Supabase and Vercel are connected)
+- Testing with real businesses
+- Sales, onboarding and support
+- Product decisions: priorities, pricing, when something is ready to ship
+- Legal: company registration, terms of service, data protection
+
 ## Decisions log
 - Exchange rates are set by each company (no automatic RBZ feed).
 - Interface is English only.
@@ -42,7 +110,7 @@ Inside every version, the company's logo, colours, modules and features load aft
 - PWA for everyone; branded APK/iOS builds on a premium plan.
 
 ## Open questions
-- Which modules and features ship in the first release?
+- Confirm release waves: which modules and features ship first?
 - Do the mobile apps include every module, or daily tasks only (POS, stock, approvals, dashboard) with the rest on the web?
-- Pricing per module, bundles, setup fees, premium app tier.
+- Final pricing per module, bundles, setup fees, premium app tier.
 - First target industries and pilot customers.
