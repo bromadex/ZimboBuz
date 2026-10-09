@@ -107,7 +107,7 @@ Ideas and patterns only: ERPNext (GPL) and Odoo Community (LGPL) code is never c
 
 | Component | Who uses it | Summary | Details |
 |---|---|---|---|
-| ERP | Owner and staff | Modules chosen by the company, features switched on or off inside each module, branded with the company's name and colours | §5 |
+| ERP | Owner and staff | Modules chosen by the company, features switched on or off inside each module, branded with the company's brand kit (§8.4) | §5 |
 | Staff apps | Owner and staff | Installable web app for everyone; branded Android and iOS apps on higher plans; no customer app | §9 |
 | Website | The company's customers | About 5 templates (2 at launch), own domain, drag-and-drop editing, motion throughout | §8 |
 | Online store | The company's customers | Template-based, live ERP stock and prices, Buy and Add-to-quote, Paynow | §8 |
@@ -301,7 +301,7 @@ Sign-up → plan → **domain** bought (name.co.zw) or connected → DNS records
 | Platform | Website builder and store, customer portal, reports and dashboards, data import | 1 |
 | Commerce and finance | Purchasing and supplier portal, full accounting, budgets, fixed assets, expenses, pricing rules, loyalty and gift cards | 2 |
 | People and compliance | HR, payroll (PAYE, NSSA, AIDS Levy, ZIMDEF), statutory returns, **ZIMRA fiscalisation** | 2 |
-| Platform | Microsoft 365 automation, print designer, workflow designer, custom fields, branded Android app, 5 templates | 2 |
+| Platform | Microsoft 365 automation, print designer, workflow designer, custom fields, branded Android app, 5 templates, advanced branding (own fonts, overrides, sub-brands, rollback) | 2 |
 | Growth | CRM and campaigns (SMS, email, WhatsApp), projects, manufacturing, quality, assets and maintenance, helpdesk, subscription billing, **ZimERP Studio**, public API | 3 |
 | Additional apps | E-signatures, appointments, field service, rental, events and ticketing, surveys, eLearning, website live chat, marketing automation | 3–4 |
 | Industry | Mining and Construction (SHEQ, fleet, fuel, contractors, campsite, meals, batch plant), healthcare, microfinance, hospitality (restaurant POS, kitchen display), garages, fleet and logistics, farming | 4 |
@@ -396,11 +396,11 @@ Paynow result notification (hash verified) → invoice or order marked paid, wit
 ### 7.4 Companies paying ZimERP
 One monthly invoice (modules, users, Microsoft 365, domains, apps) by WhatsApp and email with a Paynow link; EcoCash, OneMoney, InnBucks, cards and bank transfer; reminders before and after the due date; grace period, then **read-only mode** (never deletion, export always allowed); annual prepayment discount; priced in USD with ZiG accepted at ZimERP's published rate. ZimERP takes no cut of company transactions; value is in the subscription, plus any Paynow partner arrangement.
 
-## 8. Websites, stores and design {#s8}
+## 8. Websites, stores, design and branding {#s8}
 
 ### 8.1 Templates and editing
 - About **5 templates** (2 at launch, 5 by the end of Wave 2), each with its own look and motion style: corporate, bold, product/store, creative and one more chosen from pilot feedback.
-- Company logo, colours and fonts applied automatically; own domain with automatic SSL.
+- Company logo, colours and fonts applied automatically from the brand kit (§8.4); own domain with automatic SSL.
 - **Edit on the live page:** click text or images to change them, drag in blocks (hero, text, image, gallery, product grid, contact form, testimonials, map, WhatsApp button), built-in SEO settings.
 - Store: categories, product pages, live stock and prices, **Buy** (Paynow) or **Add to quote**; orders and quote requests flow into the ERP (§4.4).
 
@@ -414,6 +414,41 @@ One monthly invoice (modules, users, Microsoft 365, domains, apps) by WhatsApp a
 
 ### 8.3 Performance and accessibility
 Animations use only transforms and opacity, pause off screen, and never block content; images are compressed and lazy-loaded; the site works before scripts load. Reduced-motion settings are respected and nothing important depends on animation. Target: store pages score at least 85 on mobile Lighthouse on a mid-range Android profile.
+
+### 8.4 Branding and theming
+Each company sets its brand once in a **brand kit**; every part of ZimERP uses it automatically.
+
+**Brand kit**
+
+- **Colours:** primary, secondary and accent, chosen by the company or **suggested from the uploaded logo**. A full palette (lighter and darker shades for buttons, backgrounds, borders and charts) is generated automatically.
+- **Readability check:** warns when text on a chosen colour would be hard to read and offers a corrected shade.
+- **Light and dark mode** for the website, store, portal and ERP.
+- **Fonts:** curated, tested pairs of free web fonts (heading and body), e.g. Modern, Classic, Friendly, Technical; **upload your own licensed font** on Pro and Enterprise; a fast fallback font for low-end phones.
+- **Shape and style:** corner roundness, button style (solid, outline, pill), shadow strength, icon style, spacing (compact or roomy).
+- **Logo set:** full logo, icon, and a black-and-white version for thermal receipts; favicon and app icon generated from it.
+
+**Where the brand appears**
+
+| Place | What follows the brand kit |
+|---|---|
+| Website and store | Colours, fonts, buttons, motion colours, favicon |
+| ERP web app and staff apps | Header, menus, buttons, charts, login page, app icon, splash screen |
+| Customer portal | Same look as the website |
+| Documents | Invoices, quotes, statements, payslips: logo, colours, fonts, footer |
+| Receipts | Black-and-white logo for 58 mm and 80 mm thermal printers |
+| Emails and WhatsApp messages | Logo, colours, signature |
+| Branded Android and iOS apps | Name, icon, splash colours (§9.1) |
+
+**More control**
+
+- **Per-template overrides:** a template can use the brand kit as is or adjust it (e.g. a darker hero section).
+- **Per-branch sub-brands** (Enterprise) for groups with several trading names.
+- **Preview before publishing**, with **version history and rollback** of brand changes.
+- **"Done for you"** setup includes brand set-up for companies without a designer.
+
+**How it works:** colours, fonts and styles are stored per company as **design tokens** (§12.7); changing them updates every channel immediately, with no code changes.
+
+**Release timing:** Release 1 includes logo set, three brand colours with automatic palette and readability check, light and dark mode, curated font pairs, and branding of website, store, ERP, documents, receipts and emails (P20). Own font upload, per-template overrides, sub-brands and brand version rollback follow in Wave 2.
 
 ## 9. Staff apps and devices {#s9}
 
@@ -494,8 +529,9 @@ A shop with 1–5 tills can sign up, set up products, sell in ZiG and USD (cash,
 | P17 | Field-level permissions | Hidden fields are absent from screens, exports, reports and API for that role |
 | P18 | Data import tool | A 2,000-product file with errors imports valid rows only after confirmation and lists each error by row |
 | P19 | Customer portal | A customer sees only their own documents (isolation tests) |
+| P20 | Brand kit: logo set, colours with automatic palette and readability check, light/dark mode, font pairs (§8.4) | Changing the primary colour or font updates the website, store, ERP, portal, invoices, receipts and emails within one minute; low-contrast choices are flagged |
 
-Out of Release 1 (scheduled in §5.1): ZIMRA fiscalisation, payroll, purchasing workflows, Microsoft 365 automation, branded native apps, pricing rules, print and workflow designers, custom fields, supplier portal, loyalty, Studio, AI assistant.
+Out of Release 1 (scheduled in §5.1): ZIMRA fiscalisation, payroll, purchasing workflows, Microsoft 365 automation, branded native apps, own fonts, brand sub-brands and rollback, pricing rules, print and workflow designers, custom fields, supplier portal, loyalty, Studio, AI assistant.
 
 ### 11.3 Release checklist
 All acceptance tests pass; company isolation tests pass; accountant-agreed accounting tests pass; penetration test done with critical findings fixed; help articles and videos exist for every feature; 5–10 pilot companies have used it for at least 4 weeks.
@@ -556,7 +592,7 @@ Important changes write an event to an outbox table in the same transaction as t
 Middleware reads the hostname and resolves the company (cached). `name.zimerp.co.zw` serves the website and store; `erp.` addresses serve the ERP. Reserved names (www, app, api, admin, status, help) cannot be claimed. Custom domains are attached through the hosting provider's API with automatic SSL.
 
 ### 12.7 Website builder
-Pages are stored as ordered JSON blocks with content, settings and animation. A template is design tokens plus block styles plus a motion preset plus default pages. The same React block components power the live-page editor and the public renderer. Pages are rendered on the server and cached; editing refreshes that company's cache. Store blocks read live products, prices and stock through read-only views.
+Pages are stored as ordered JSON blocks with content, settings and animation. A template is design tokens plus block styles plus a motion preset plus default pages; the company's brand kit (§8.4) fills the design tokens, so one change restyles every channel. The same React block components power the live-page editor and the public renderer. Pages are rendered on the server and cached; editing refreshes that company's cache. Store blocks read live products, prices and stock through read-only views.
 
 ### 12.8 Offline sync and adapters
 Sync rules give each device only its company, branch and role data; offline writes queue and are validated by server functions (stock, numbering, payment states), with conflicts flagged. External services sit behind adapters: payments, email, messaging, storage, DNS and domains, fiscal (ZIMRA) and AI.
@@ -652,8 +688,8 @@ All USD, a proposal to validate with pilots (§11.4). Structure: a plan per comp
 | Starter | Free | 1 | Core + 1 (POS or invoicing) | ZimERP subdomain, 1 template with "Powered by ZimERP" badge, PWA, self-service support |
 | Business | $29 | 5 | 3 | Own domain, website and store, Paynow, WhatsApp receipts, ZiG/USD |
 | Growth | $79 | 15 | 6 | 2 branches, approvals, advanced reports, Ask AI (basic), priority support |
-| Pro | $199 | 50 | All standard | 5 branches, branded Android app, API, custom workflows, Studio (from Wave 3) |
-| Enterprise | From $499 | Unlimited | All, including industry | Branded iOS app, dedicated setup and database, SLA, on-premise option |
+| Pro | $199 | 50 | All standard | 5 branches, branded Android app, own fonts, API, custom workflows, Studio (from Wave 3) |
+| Enterprise | From $499 | Unlimited | All, including industry | Branded iOS app, per-branch sub-brands, dedicated setup and database, SLA, on-premise option |
 
 ### 17.2 User types
 - **Full users** count towards the plan limit.
@@ -856,6 +892,7 @@ One internal ZimERP dashboard brings together the numbers every part of this pla
 | Customisation | Companies choose modules and features; do-it-yourself or done-for-you setup |
 | Apps | Staff only; PWA for all, branded Android/iOS on higher plans; no customer app |
 | Design | Websites and stores as modern as possible, with motion throughout, controllable per company, fast on low-end phones |
+| Branding | Companies customise colours, fonts, shapes and logos in one brand kit applied to every channel, document and app |
 | Currency | Each company sets its own exchange rates; English-only interface |
 | Payments | Paynow first; money goes straight to each company; ZimERP never holds funds |
 | Email | Microsoft 365 via CSP, one tenant per company |
