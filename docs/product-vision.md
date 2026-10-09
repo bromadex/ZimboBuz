@@ -350,12 +350,65 @@ Benchmark: Unicorn Solutions publishes $200 / $500 / $1,000 per month. All figur
 - Paynow partner/referral arrangement, if available (ZimERP does not take a cut of transactions)
 - Lender referral fees using sales data, only with the company's consent
 
-## Go-to-market ideas
-- Pilot: 5–10 businesses free for a month in exchange for feedback and testimonials
-- Accountants and bookkeepers as resellers (commission or free access)
-- Commission-based field agents who sign up and set up shops
-- WhatsApp for marketing and support
-- Talk to 15–20 business owners before building each wave
+## Marketing and go-to-market
+
+### Message
+**Headline:** "Run your whole business in one place: ZiG and USD, EcoCash, ZIMRA, website and email. Built for Zimbabwe."
+
+Three proof points, each shown in a short video:
+1. ZiG/USD split-tender sale with correct change, in 10 seconds
+2. EcoCash prompt on the customer's phone; the invoice marks itself paid
+3. Keeps working during load-shedding, then syncs when power returns
+
+Positioning against alternatives:
+- **Exercise books and Excel:** "stop losing money to mistakes and missing stock"
+- **Expensive ERPs:** "what others charge $200 for, from $29"
+- **Foreign software:** "built for ZIMRA, ZiG and EcoCash, not adapted for them"
+
+### Use it ourselves
+- The ZimERP website is built on ZimERP's own templates, so the site is the demo.
+- Bromadex is customer #1; with permission, Bravura is the Mining and Construction case study. Real Zimbabwean customers are proof no competitor shows.
+
+### Channels
+
+| Channel | Use |
+|---|---|
+| WhatsApp | Business account with catalogue, daily Status, broadcast list for tips and offers, replies within minutes; expected main lead source |
+| Facebook and Instagram | Short proof videos, customer stories, ads targeted at business owners in Harare and Bulawayo (small daily budget to start) |
+| TikTok | "Day in the life of a shop on ZimERP", ZiG/USD tips |
+| Google search (SEO) | Pages and articles for "POS system Zimbabwe", "ERP Zimbabwe", "ZIMRA fiscalisation software", "ZiG accounting software" |
+| LinkedIn | Mining, construction and larger companies: case studies and founder posts |
+| YouTube | How-to videos that double as support material |
+
+### Partners who bring customers
+- **Accountants and bookkeepers:** 20% recurring commission (see Pricing)
+- **Tax consultants and fiscal device sellers:** ZIMRA compliance creates demand
+- **Hardware shops:** bundle printers, scanners and tablets with ZimERP
+- **Paynow and Microsoft:** partner listings for referrals and credibility
+- **Banks and microfinance lenders:** better SME records make lending easier
+- **Field agents:** commission-based; set up free plans in shops and earn when they upgrade
+
+### Events and associations
+- **ZITF** (Zimbabwe International Trade Fair, Bulawayo) and **Mine Entra** (mining expo, ideal for the Mining and Construction bundle)
+- Chambers and associations such as ZNCC, CZI and retailer associations: talks, workshops, member discounts
+- Free workshops, e.g. "ZIMRA fiscalisation and ZiG: what your business must do"
+
+### Turning interest into paying customers
+1. Free Starter plan: sign up in 2 minutes, sell the same day
+2. In-app guided setup ("add your first product") plus a WhatsApp message from a real person on day 1
+3. 14-day trial of Growth features inside the free plan
+4. Live demos booked on WhatsApp, in person or by video call
+5. Referral reward: one month free for both the referrer and the new customer
+
+### Launch plan
+1. **Before launch:** pilot with 5–10 businesses free for a month, record video testimonials, build the website and a WhatsApp waiting list; talk to 15–20 business owners before building each wave
+2. **Launch month:** founding-customer price for the first 50, press release to local business media, launch event or webinar
+3. **Months 2–6:** sign accountant partners, recruit field agents, steady social content, exhibit at ZITF and Mine Entra
+4. **Ongoing:** a customer story every month, SEO articles, feature launch videos
+
+### Budget and metrics
+- Start with about $200–500/month on ads plus agent commissions; increase spend only on channels that bring sign-ups.
+- Track: sign-ups per week, free-to-paid conversion, cost to acquire a paying customer, monthly churn, and where each customer heard about ZimERP.
 
 ## Differentiator ideas
 - ZiG/USD split tender and change-shortage handling (store credit, vouchers, mobile-money refunds)
