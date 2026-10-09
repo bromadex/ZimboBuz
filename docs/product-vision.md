@@ -1,4 +1,4 @@
-# ZimboBuz Product Vision
+# ZimERP Product Vision
 
 Status: brainstorming. This records decisions made so far; nothing here is built yet.
 
@@ -50,15 +50,15 @@ Inside every version, the company's logo, colours, modules and features load aft
 
 ## Email hosting (Microsoft 365)
 
-Companies get professional mailboxes on their own domain (e.g. `sales@company.co.zw`) through **Microsoft 365**, resold by ZimboBuz. We do not run our own mail servers.
+Companies get professional mailboxes on their own domain (e.g. `sales@company.co.zw`) through **Microsoft 365**, resold by ZimERP. We do not run our own mail servers.
 
 ### How we resell it
 - Join the **Microsoft AI Cloud Partner Program** and sell through the **Cloud Solution Provider (CSP)** programme, starting as an **indirect reseller** through an authorised Microsoft distributor (direct billing needs a much larger business).
-- Each customer company gets **its own Microsoft 365 tenant**; ZimboBuz manages it through a **GDAP** (granular delegated admin) relationship the customer approves.
+- Each customer company gets **its own Microsoft 365 tenant**; ZimERP manages it through a **GDAP** (granular delegated admin) relationship the customer approves.
 - Plans offered (check current names and prices with the distributor): **Exchange Online** (email only, cheapest), **Microsoft 365 Business Basic** (email, Teams, OneDrive, web Office), **Business Standard** (adds desktop Office apps), **Business Premium** (adds advanced security and device management).
 
-### ZimboBuz integration
-- **One-click domain setup:** because ZimboBuz manages the company's domain, it adds Microsoft's verification, MX, autodiscover, SPF, DKIM and DMARC records automatically.
+### ZimERP integration
+- **One-click domain setup:** because ZimERP manages the company's domain, it adds Microsoft's verification, MX, autodiscover, SPF, DKIM and DMARC records automatically.
 - **Mailboxes driven by HR:** adding an employee in the ERP creates their Microsoft 365 user and assigns a licence; marking them as left blocks sign-in, converts the mailbox to shared, forwards it to their manager and frees the licence (via Microsoft Graph).
 - **Sign in with Microsoft:** staff log in to the ERP with their Microsoft 365 account (Entra ID single sign-on), so one password covers email and ERP.
 - **ERP emails from the company's own mailbox:** invoices, quotes, statements and reminders are sent from e.g. `accounts@company.co.zw` through Microsoft Graph, so replies land in their Outlook. A transactional service (e.g. Resend, already used in Bravura) remains the fallback for high-volume or no-reply mail.
@@ -67,7 +67,7 @@ Companies get professional mailboxes on their own domain (e.g. `sales@company.co
 - **Website forms** deliver to the right mailbox and create a CRM lead.
 
 ### Pricing idea (not decided)
-- Microsoft licence cost plus a ZimboBuz margin, billed monthly with the ERP subscription (one invoice, payable by EcoCash or card)
+- Microsoft licence cost plus a ZimERP margin, billed monthly with the ERP subscription (one invoice, payable by EcoCash or card)
 - Bundles such as "Website + store + 5 mailboxes"
 - Once-off migration fee for moving mail from an existing host (cPanel, Gmail, other)
 - Licences are billed in USD by Microsoft; ZiG pricing follows the company's exchange-rate policy
@@ -76,7 +76,7 @@ Companies get professional mailboxes on their own domain (e.g. `sales@company.co
 
 ### Platform hosting
 
-**Decision:** build and test on **Vercel + Supabase**; move to **Microsoft Azure (South Africa North, Johannesburg)** when ZimboBuz is ready to sell.
+**Decision:** build and test on **Vercel + Supabase**; move to **Microsoft Azure (South Africa North, Johannesburg)** when ZimERP is ready to sell.
 
 #### Phase 1: building (Vercel + Supabase)
 - Vercel serves websites, stores and ERP screens; Supabase provides the database, logins, file storage and server functions. Both are already connected and used by Bravura and Bromadex.
@@ -101,7 +101,7 @@ Companies get professional mailboxes on their own domain (e.g. `sales@company.co
 So the switch from Vercel + Supabase to Azure is a migration, not a rewrite:
 - **Standard PostgreSQL only:** all schema, security rules (RLS) and business logic in SQL migration files kept in the repository, so they run unchanged on self-hosted Supabase or Azure PostgreSQL.
 - **No Vercel-only features** (Vercel KV, Edge Config, Vercel-specific image or cron services) unless wrapped behind our own small adapter.
-- **Wrap provider services behind adapters:** file storage, email sending, auth/sign-in, background jobs and DNS each go through one ZimboBuz module, so only that module changes when moving to Azure.
+- **Wrap provider services behind adapters:** file storage, email sending, auth/sign-in, background jobs and DNS each go through one ZimERP module, so only that module changes when moving to Azure.
 - **Configuration through environment variables**, never hard-coded URLs or keys.
 - **Container-ready:** the app and server functions can be packaged as Docker containers.
 - **Rehearse the move:** before launch, restore a copy of the database and files on Azure, run the full test suite there and measure speed from Harare and Bulawayo.
@@ -110,7 +110,7 @@ So the switch from Vercel + Supabase to Azure is a migration, not a rewrite:
 For customers requiring data in Zimbabwe: a private install in a Zimbabwean data centre, or on the customer's own servers with a licence key. See **On-premise deployment** below.
 
 #### Not offered
-No plain cPanel web hosting at launch; customer websites are hosted as part of ZimboBuz.
+No plain cPanel web hosting at launch; customer websites are hosted as part of ZimERP.
 
 ### Backend choice: Supabase and alternatives
 
@@ -148,7 +148,7 @@ For offline-first POS and staff apps (load-shedding, expensive data), add **Powe
 Supabase is open source (Apache 2.0) and self-hostable, so building on Supabase does not prevent clients from keeping their data on their own servers.
 
 #### How it works
-- The client's server runs **self-hosted Supabase in Docker** (database, logins, storage, server functions) plus the **ZimboBuz app as a Node.js/Docker service**.
+- The client's server runs **self-hosted Supabase in Docker** (database, logins, storage, server functions) plus the **ZimERP app as a Node.js/Docker service**.
 - The **same SQL migrations, security rules and functions** as the cloud version: one product, not a separate fork.
 - This only works if the app avoids hosting-provider-only features (see "Building for the move").
 
@@ -157,7 +157,7 @@ Supabase is open source (Apache 2.0) and self-hostable, so building on Supabase 
 |---|---|---|
 | Backups | Automatic | Must be set up: daily backups plus an off-server copy |
 | Updates | Deployed once for everyone | Each install updated separately, via an automated update script |
-| Security | Managed by the provider | Firewall, SSL, OS patches and access control are ZimboBuz's or the client's IT team's job (agreed in the contract) |
+| Security | Managed by the provider | Firewall, SSL, OS patches and access control are ZimERP's or the client's IT team's job (agreed in the contract) |
 | Power and internet | Data-centre grade | Needs a UPS or generator and a stable connection; load-shedding is a real risk |
 | Extras | Full managed dashboard and features | A few managed-only extras (e.g. database branching) are unavailable; core features work |
 
@@ -165,13 +165,13 @@ Supabase is open source (Apache 2.0) and self-hostable, so building on Supabase 
 On a client's server, their IT staff can access the database, including SQL functions and security rules, and the minified app code. Protection:
 1. **Licence agreement:** no copying, reverse-engineering or resale, with penalties.
 2. **Licence key** checked regularly, with expiry tied to payment.
-3. **Keep the most valuable logic off the client's server:** run it in a compiled service or call ZimboBuz cloud services for it (e.g. ZIMRA fiscalisation, payment integrations, AI).
+3. **Keep the most valuable logic off the client's server:** run it in a compiled service or call ZimERP cloud services for it (e.g. ZIMRA fiscalisation, payment integrations, AI).
 4. **Enterprise pricing** that covers the risk and extra support.
 
 #### Responsibilities (set in the contract)
-- **ZimboBuz:** installation, updates, licence management, application support, remote monitoring.
-- **Client:** server hardware, power backup, internet, physical security, and either their own IT for OS/network or a paid ZimboBuz managed-service add-on.
-- **Remote access** for ZimboBuz support (VPN or secure tunnel) agreed up front.
+- **ZimERP:** installation, updates, licence management, application support, remote monitoring.
+- **Client:** server hardware, power backup, internet, physical security, and either their own IT for OS/network or a paid ZimERP managed-service add-on.
+- **Remote access** for ZimERP support (VPN or secure tunnel) agreed up front.
 
 #### Server requirements (rough guide, size to real users and data)
 - Linux server or virtual machine with Docker
@@ -179,34 +179,34 @@ On a client's server, their IT staff can access the database, including SQL func
 - UPS, off-site backups, remote access for support
 
 ### Domain sales (feeds website, ERP and Microsoft 365 setup)
-ZimboBuz sells domains, and the domain becomes the backbone of each company's setup.
+ZimERP sells domains, and the domain becomes the backbone of each company's setup.
 
 - **What we sell:** Zimbabwean domains (`.co.zw`, `.org.zw`, `.ac.zw`) through **[name.co.zw](https://name.co.zw/)**, and `.com`, `.africa`, `.net` etc. through an international registrar with an API (Vercel can register many generic domains).
-- **Registered in the customer's name** so they own it; ZimboBuz manages the DNS.
-- **Customers can also bring an existing domain:** they point its nameservers to ZimboBuz, or we transfer it in.
+- **Registered in the customer's name** so they own it; ZimERP manages the DNS.
+- **Customers can also bring an existing domain:** they point its nameservers to ZimERP, or we transfer it in.
 - **Yearly renewals** give recurring income; automatic renewal reminders by email and WhatsApp, renewal billed with the subscription.
 
 ### Local registrar: name.co.zw
 - Registers `.co.zw`, `.org.zw` and `.ac.zw`; from US$5.99/year or ZiG equivalent; pays via Paynow (verified merchant); nameserver changes are instant. Operated by Web Enchanter (Pvt) Ltd.
 - Its website lists no reseller programme, no API and no hosting; it is used for domain registration only.
-- **How automation still works:** register the domain at name.co.zw in the customer's name, point its nameservers to ZimboBuz-managed DNS (Vercel DNS or Cloudflare) once, then ZimboBuz adds every record automatically. Without an API, registration itself is a manual step done by the ZimboBuz team when an order comes in.
+- **How automation still works:** register the domain at name.co.zw in the customer's name, point its nameservers to ZimERP-managed DNS (Vercel DNS or Cloudflare) once, then ZimERP adds every record automatically. Without an API, registration itself is a manual step done by the ZimERP team when an order comes in.
 
 **Questions to ask name.co.zw:**
 1. Do you have a reseller or partner account, and what are the wholesale prices per domain type?
 2. Is there an API for checking availability, registering, renewing and changing nameservers?
 3. Can domains be registered in the customer's name while managed from our reseller account?
 4. Can renewals be automatic and billed to our account, and how far in advance are renewal reminders sent?
-5. Can we set custom nameservers at registration, so domains point to ZimboBuz DNS from day one?
+5. Can we set custom nameservers at registration, so domains point to ZimERP DNS from day one?
 6. How are transfers handled (into name.co.zw from another registrar, and out if a customer leaves)?
 7. What documents does the registry require for `.co.zw` (company registration, ID), and how long does approval take?
 8. Can we pay in USD and ZiG on account, and do you invoice monthly?
 9. What support do you offer partners (contact person, response times)?
 
 ### One-click setup flow
-1. Company searches for and buys a domain inside ZimboBuz (or connects an existing one); `.co.zw` orders are registered at name.co.zw.
-2. ZimboBuz creates the DNS zone and adds website, store and ERP records (`company.co.zw`, `www`, `erp`) with SSL.
-3. ZimboBuz creates the company's **Microsoft 365 tenant**, adds the domain to it and publishes Microsoft's verification record automatically, then completes verification.
-4. ZimboBuz adds the email records: MX, autodiscover, SPF, DKIM and DMARC.
+1. Company searches for and buys a domain inside ZimERP (or connects an existing one); `.co.zw` orders are registered at name.co.zw.
+2. ZimERP creates the DNS zone and adds website, store and ERP records (`company.co.zw`, `www`, `erp`) with SSL.
+3. ZimERP creates the company's **Microsoft 365 tenant**, adds the domain to it and publishes Microsoft's verification record automatically, then completes verification.
+4. ZimERP adds the email records: MX, autodiscover, SPF, DKIM and DMARC.
 5. Mailboxes are created from the ERP's HR employee list, and staff can sign in to the ERP with their Microsoft account.
 6. The setup screen shows a checklist with live status (domain active, website live, SSL issued, Microsoft verified, email flowing).
 
@@ -276,7 +276,7 @@ The mobile app focuses on daily tasks; heavy work (full accounting, payroll runs
 
 ## Existing work to build on
 
-Two of the owner's existing projects already cover much of ZimboBuz for a single company. Their modules are adapted rather than rewritten; the main new work is making everything **multi-tenant** (many companies on one platform, each with its own data, branding, modules, features and domain).
+Two of the owner's existing projects already cover much of ZimERP for a single company. Their modules are adapted rather than rewritten; the main new work is making everything **multi-tenant** (many companies on one platform, each with its own data, branding, modules, features and domain).
 
 ### Bromadex website (website + store + ERP for one company)
 - Public website: home, services, about, projects portfolio, contact (React + Tailwind)
@@ -290,7 +290,7 @@ Two of the owner's existing projects already cover much of ZimboBuz for a single
 - Approval routes and inbox, notification centre, AI daily brief, scheduled email reports, fuel flow-meter ingest (IoT), command palette with screen codes, installable PWA, public supplier order confirmation page
 - Offline stores prototype (local browser storage, QR scanning)
 
-### Ideas carried into ZimboBuz
+### Ideas carried into ZimERP
 1. **Website → store → quote → ERP lead:** every enquiry on a company's website becomes a lead in its ERP. A headline selling point.
 2. **"Add to quote" as well as "Buy" in the store:** a store feature toggle for businesses that quote rather than sell at fixed prices (hardware, engineering, wholesale).
 3. **Quotation and invoice PDFs sent by WhatsApp.**
@@ -303,16 +303,16 @@ Two of the owner's existing projects already cover much of ZimboBuz for a single
 
 ## Ownership and licensing
 
-ZimboBuz is **proprietary, closed-source software**. Customers rent access (SaaS); they never receive the source code.
+ZimERP is **proprietary, closed-source software**. Customers rent access (SaaS); they never receive the source code.
 
-- **Repositories private:** ZimboBuz, Bromadex and Bravura repositories must be private on GitHub. Only people under a written agreement (NDA and IP assignment) get access.
-- **No copyleft code:** do not copy code from GPL/AGPL projects such as ERPNext/Frappe or Odoo Community into ZimboBuz. They can be studied for ideas only. Prefer libraries under MIT, BSD, Apache 2.0 or ISC licences, and check every new dependency's licence before adding it.
+- **Repositories private:** ZimERP, Bromadex and Bravura repositories must be private on GitHub. Only people under a written agreement (NDA and IP assignment) get access.
+- **No copyleft code:** do not copy code from GPL/AGPL projects such as ERPNext/Frappe or Odoo Community into ZimERP. They can be studied for ideas only. Prefer libraries under MIT, BSD, Apache 2.0 or ISC licences, and check every new dependency's licence before adding it.
 - **Business logic stays on the server:** pricing, tax, payroll and fiscalisation rules run in the database and server functions, not in browser or app code that can be copied.
 - **Mobile apps and PWA** ship only compiled, minified front-end code; secrets never go into app builds.
 - **Secrets** live in environment settings (Supabase, Vercel), never in the repository; `.env` files are always git-ignored.
-- **Customer contracts:** terms of service and a licence agreement state that the software and website templates remain ZimboBuz property; the customer owns their own data and can export it.
+- **Customer contracts:** terms of service and a licence agreement state that the software and website templates remain ZimERP property; the customer owns their own data and can export it.
 - **On-premise deployments (Enterprise):** delivered as a licensed, compiled build with a licence key, not as source code.
-- **Brand protection:** register the ZimboBuz name and logo as a trademark with ZIPO (Zimbabwe Intellectual Property Office); register the company and own the domains in the company's name.
+- **Brand protection:** register the ZimERP name and logo as a trademark with ZIPO (Zimbabwe Intellectual Property Office); register the company and own the domains in the company's name.
 
 ## How it gets built
 Development is done by AI (Claude), in small testable steps, each with automated tests, reviewed and tried by the owner before moving on. Decisions are recorded in this folder so later sessions keep context.
@@ -325,18 +325,19 @@ What the owner handles:
 - Legal: company registration, terms of service, data protection
 
 ## Decisions log
+- Product name is **ZimERP** (formerly ZimboBuz). Check the name is free (ZIPO trademark search, `.co.zw`/`.com` domains, company name) before registering it.
 - Exchange rates are set by each company (no automatic RBZ feed).
 - Interface is English only.
 - Mobile apps are for staff (ERP) only, not for customers.
 - PWA for everyone; branded APK/iOS builds on a premium plan.
 - Websites and stores are as modern as possible, with motion throughout (per-template motion styles, company-controlled intensity, fast on low-end phones).
-- `.co.zw` domains are registered through name.co.zw, with nameservers pointed to ZimboBuz DNS.
-- ZimboBuz sells domains; the domain drives one-click setup of the website, store, ERP and Microsoft 365.
+- `.co.zw` domains are registered through name.co.zw, with nameservers pointed to ZimERP DNS.
+- ZimERP sells domains; the domain drives one-click setup of the website, store, ERP and Microsoft 365.
 - Backend stays on Supabase (PostgreSQL); PowerSync for offline sync in POS and staff apps.
-- Enterprise clients can run ZimboBuz on their own servers using self-hosted Supabase, protected by licence agreement, licence key and keeping key logic in ZimboBuz cloud services.
+- Enterprise clients can run ZimERP on their own servers using self-hosted Supabase, protected by licence agreement, licence key and keeping key logic in ZimERP cloud services.
 - Build on Vercel + Supabase; move to Azure (Johannesburg) for commercial launch; code stays portable (standard PostgreSQL, adapters for provider services). No plain cPanel hosting.
 - Email hosting is Microsoft 365, resold through the CSP programme, with each company in its own tenant.
-- ZimboBuz is proprietary and closed source; no GPL/AGPL code is copied in.
+- ZimERP is proprietary and closed source; no GPL/AGPL code is copied in.
 - Build on the Bromadex and Bravura codebases, converted to multi-tenant, rather than starting from scratch.
 
 ## Open questions

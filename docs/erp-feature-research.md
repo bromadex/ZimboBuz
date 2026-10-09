@@ -1,6 +1,6 @@
 # ERP Feature Research: Zimbabwe Market
 
-Competitor and market research for ZimboBuz. Features below are what each vendor **claims** on its website (checked October 2026); none have been verified hands-on.
+Competitor and market research for ZimERP. Features below are what each vendor **claims** on its website (checked October 2026); none have been verified hands-on.
 
 ## Sources
 
@@ -114,7 +114,7 @@ Competitor and market research for ZimboBuz. Features below are what each vendor
 - Transparent pricing with self-service sign-up
 - Evidence of real Zimbabwean customers
 
-## Proposed additions for ZimboBuz
+## Proposed additions for ZimERP
 
 > Decisions: exchange rates are set by each company (no automatic RBZ feed). The interface is English only; Shona/Ndebele localisation is out of scope.
 
