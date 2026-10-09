@@ -93,6 +93,33 @@ The mobile app focuses on daily tasks; heavy work (full accounting, payroll runs
 - Sales history to support loan applications
 - Plain-language AI assistant ("how much did I make this week?")
 
+## Existing work to build on
+
+Two of the owner's existing projects already cover much of ZimboBuz for a single company. Their modules are adapted rather than rewritten; the main new work is making everything **multi-tenant** (many companies on one platform, each with its own data, branding, modules, features and domain).
+
+### Bromadex website (website + store + ERP for one company)
+- Public website: home, services, about, projects portfolio, contact (React + Tailwind)
+- Online store: categories, products, cart that generates a **quotation PDF** sent via WhatsApp
+- ERP: finance (invoices, payments, expenses), procurement, inventory, CRM/sales pipeline, store admin
+- Database-enforced rules: stock changes only through movements and never goes negative; purchase orders follow a fixed status flow with weighted-average costing on receipt; invoice totals and balances kept by triggers; customers de-duplicated by email or phone; **every website quote request opens a CRM lead**
+
+### Bravura ERP (multi-site mining and camp operations)
+- Finance (GL, bank reconciliation, statements, cost centres, automatic postings from other modules), procurement, inventory, fuel, fleet, HR and payroll with statutory returns, contractors, campsite, meals, SHEQ (~35 screens), projects, DocShare, Connect (internal chat), governance (announcements, policies)
+- **Ask Bravura:** AI assistant that can only call read-only, permission-checked database functions as the asking user, logs every question, supports voice notes
+- Approval routes and inbox, notification centre, AI daily brief, scheduled email reports, fuel flow-meter ingest (IoT), command palette with screen codes, installable PWA, public supplier order confirmation page
+- Offline stores prototype (local browser storage, QR scanning)
+
+### Ideas carried into ZimboBuz
+1. **Website → store → quote → ERP lead:** every enquiry on a company's website becomes a lead in its ERP. A headline selling point.
+2. **"Add to quote" as well as "Buy" in the store:** a store feature toggle for businesses that quote rather than sell at fixed prices (hardware, engineering, wholesale).
+3. **Quotation and invoice PDFs sent by WhatsApp.**
+4. **Permission-safe AI assistant (Ask):** the AI only sees what the asking user is allowed to see.
+5. **Shared platform services for every module:** approval routes, notification centre, AI daily brief, scheduled email reports, audit log.
+6. **Multi-site with head-office view:** HQ buys and pays centrally, each transaction names the destination site.
+7. **Shared document viewer and controlled documents** (versions, approvals, acknowledgements, expiry) usable from any module.
+8. **Mining and Construction bundle:** SHEQ, fleet, fuel, contractors, campsite, meals, batch plant. An industry no competitor targets directly.
+9. **Engineering standards:** no hard deletes (archive only), audit trail on every record, permission checks enforced in the database, screen codes and a command palette.
+
 ## How it gets built
 Development is done by AI (Claude), in small testable steps, each with automated tests, reviewed and tried by the owner before moving on. Decisions are recorded in this folder so later sessions keep context.
 
@@ -108,9 +135,11 @@ What the owner handles:
 - Interface is English only.
 - Mobile apps are for staff (ERP) only, not for customers.
 - PWA for everyone; branded APK/iOS builds on a premium plan.
+- Build on the Bromadex and Bravura codebases, converted to multi-tenant, rather than starting from scratch.
 
 ## Open questions
 - Confirm release waves: which modules and features ship first?
 - Do the mobile apps include every module, or daily tasks only (POS, stock, approvals, dashboard) with the rest on the web?
 - Final pricing per module, bundles, setup fees, premium app tier.
-- First target industries and pilot customers.
+- First target industries and pilot customers (Mining and Construction is a candidate given existing modules).
+- Technical approach to multi-tenancy: shared database with a company id on every row, or a separate database per company.
