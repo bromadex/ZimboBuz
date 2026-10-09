@@ -410,6 +410,61 @@ Positioning against alternatives:
 - Start with about $200–500/month on ads plus agent commissions; increase spend only on channels that bring sign-ups.
 - Track: sign-ups per week, free-to-paid conversion, cost to acquire a paying customer, monthly churn, and where each customer heard about ZimERP.
 
+## Customer support
+
+### Support levels by plan
+
+| Plan | Channels | First response | Hours |
+|---|---|---|---|
+| Starter (free) | Help centre, videos, AI assistant, community WhatsApp group | Self-service only | 24/7 (self-service) |
+| Business | + WhatsApp and email tickets | Within 8 working hours | Mon–Fri 8:00–17:00, Sat 9:00–13:00 |
+| Growth | + in-app chat | Within 4 working hours | As above, plus extended evening hours |
+| Pro | + phone and video calls, priority queue | Within 2 hours | 7 days a week |
+| Enterprise | + dedicated account manager, SLA, on-site visits | Critical issues within 1 hour | 24/7 for critical issues |
+
+**Critical** (system down, POS cannot sell, payments failing, ZIMRA submissions failing) gets top priority on every paid plan.
+
+### WhatsApp first, AI first
+- One WhatsApp Business support number.
+- An AI assistant answers first using the help centre and, with permission-safe read-only access (same design as Ask Bravura), the customer's own setup.
+- Hands over to a person when it cannot solve the issue, when the customer asks, or for anything critical, passing the full conversation.
+- Every conversation becomes a ticket in ZimERP's own **Helpdesk** module (we use our own product).
+
+### Self-service
+- Help centre: short searchable articles with screenshots; a "?" on every screen opens help for that page.
+- 1–2 minute videos for every common task, on YouTube and inside the app.
+- In-app guidance: setup checklist, tooltips, "what's new" after updates.
+- Community WhatsApp group or forum.
+
+### Onboarding
+- Self-service setup checklist: company details, currency and exchange rate, products, Paynow, first sale.
+- Paid plans: welcome call in week one, check-ins at day 7 and day 30.
+- "Done for you": the ZimERP team sets up and trains staff (see Pricing once-off fees).
+- Free monthly online training class; paid on-site training.
+
+### Reporting problems
+- "Report a problem" button attaches a screenshot, page, user, device, app version and recent errors automatically.
+- Error tracking alerts the team before customers notice.
+- Public status page for maintenance and outages, with WhatsApp and email notices to affected companies.
+- Escalation: support agent → technical lead → developer (AI-assisted fix) → written incident report to the customer for critical issues.
+
+### On-premise clients
+- Remote access agreed in the contract; server health monitoring (disk, backups, uptime); updates in agreed maintenance windows.
+
+### Partners as first-line support
+- Accountant partners and field agents get training and certification to handle basic questions for their own clients; ZimERP handles escalations.
+
+### Team and resilience
+- Start: owner plus 1–2 support staff, with AI handling most simple questions.
+- Load-shedding plan: support staff have backup power (inverter/solar) and backup mobile data.
+- Grow to roughly 1 support person per 150–250 paying customers, depending on how much AI and self-service resolve.
+
+### Metrics
+- First response time, time to resolve, satisfaction after each ticket
+- Share of questions resolved by AI or self-service
+- Top question topics (fed back into product and help articles)
+- Churn after poor support experiences
+
 ## Differentiator ideas
 - ZiG/USD split tender and change-shortage handling (store credit, vouchers, mobile-money refunds)
 - Offline-first operation for load-shedding
