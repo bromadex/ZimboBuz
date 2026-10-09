@@ -76,12 +76,14 @@ Companies get professional mailboxes on their own domain (e.g. `sales@company.co
 
 ### Platform hosting
 
-**Decision:** build and test on **Vercel + Supabase**; move to **Microsoft Azure (South Africa North, Johannesburg)** when ZimboBuz is ready to sell.
+**Decision:** build and test **locally on the owner's computer**; move to **Microsoft Azure (South Africa North, Johannesburg)** when ZimboBuz is ready to sell.
 
-#### Phase 1: building (Vercel + Supabase)
-- Vercel serves websites, stores and ERP screens; Supabase provides the database, logins, file storage and server functions. Both are already connected and used by Bravura and Bromadex.
-- Cheap and fast to iterate: roughly $50–100/month.
-- Used for development, demos and pilot customers.
+#### Phase 1: building (owner's computer)
+- The code lives in the private GitHub repository; AI sessions write and push code there, and the owner pulls it to run on their computer.
+- Runs locally with free tools: **Node.js** for the app, **Docker Desktop** and the **Supabase CLI** for a full local database, logins, file storage and server functions (the same stack used by Bravura and Bromadex, so it moves to self-hosted Supabase on Azure unchanged).
+- Costs nothing beyond the computer and internet.
+- **Limits:** only the owner can use it; a home computer has no fixed public address and goes down with load-shedding, so it is not suitable for real customers. For showing it to others, use a temporary online preview (e.g. a free Vercel/Supabase project or a short-lived Azure setup) rather than exposing the home computer to the internet.
+- Keep regular backups of the local database and push code to GitHub often, so nothing is lost if the computer fails.
 
 #### Phase 2: commercial launch (Azure, Johannesburg)
 - **Why Azure:** same Microsoft partnership (CSP) as Microsoft 365 email, margin on resold Azure usage, data centre in South Africa close to Zimbabwe, staff sign in with Microsoft 365 (Entra ID), trusted by enterprise customers, possible startup credits (check Microsoft for Startups terms).
@@ -98,9 +100,9 @@ Companies get professional mailboxes on their own domain (e.g. `sales@company.co
 - All companies share one platform; only **Enterprise** customers get a dedicated Azure setup (own database and app), priced at a premium.
 
 #### Building for the move (rules from day one)
-So the switch from Vercel + Supabase to Azure is a migration, not a rewrite:
+So the move from the local setup to Azure is a migration, not a rewrite:
 - **Standard PostgreSQL only:** all schema, security rules (RLS) and business logic in SQL migration files kept in the repository, so they run unchanged on self-hosted Supabase or Azure PostgreSQL.
-- **No Vercel-only features** (Vercel KV, Edge Config, Vercel-specific image or cron services) unless wrapped behind our own small adapter.
+- **No provider-only features** (e.g. Vercel KV or Edge Config, cloud-specific cron or image services) unless wrapped behind our own small adapter.
 - **Wrap provider services behind adapters:** file storage, email sending, auth/sign-in, background jobs and DNS each go through one ZimboBuz module, so only that module changes when moving to Azure.
 - **Configuration through environment variables**, never hard-coded URLs or keys.
 - **Container-ready:** the app and server functions can be packaged as Docker containers.
@@ -115,7 +117,7 @@ No plain cPanel web hosting at launch; customer websites are hosted as part of Z
 ### Domain sales (feeds website, ERP and Microsoft 365 setup)
 ZimboBuz sells domains, and the domain becomes the backbone of each company's setup.
 
-- **What we sell:** Zimbabwean domains (`.co.zw`, `.org.zw`, `.ac.zw`) through **[name.co.zw](https://name.co.zw/)**, and `.com`, `.africa`, `.net` etc. through an international registrar with an API (Vercel can register many generic domains).
+- **What we sell:** Zimbabwean domains (`.co.zw`, `.org.zw`, `.ac.zw`) through **[name.co.zw](https://name.co.zw/)**, and `.com`, `.africa`, `.net` etc. through an international registrar with an API.
 - **Registered in the customer's name** so they own it; ZimboBuz manages the DNS.
 - **Customers can also bring an existing domain:** they point its nameservers to ZimboBuz, or we transfer it in.
 - **Yearly renewals** give recurring income; automatic renewal reminders by email and WhatsApp, renewal billed with the subscription.
@@ -123,7 +125,7 @@ ZimboBuz sells domains, and the domain becomes the backbone of each company's se
 ### Local registrar: name.co.zw
 - Registers `.co.zw`, `.org.zw` and `.ac.zw`; from US$5.99/year or ZiG equivalent; pays via Paynow (verified merchant); nameserver changes are instant. Operated by Web Enchanter (Pvt) Ltd.
 - Its website lists no reseller programme, no API and no hosting; it is used for domain registration only.
-- **How automation still works:** register the domain at name.co.zw in the customer's name, point its nameservers to ZimboBuz-managed DNS (Vercel DNS or Cloudflare) once, then ZimboBuz adds every record automatically. Without an API, registration itself is a manual step done by the ZimboBuz team when an order comes in.
+- **How automation still works:** register the domain at name.co.zw in the customer's name, point its nameservers to ZimboBuz-managed DNS (Azure DNS or Cloudflare) once, then ZimboBuz adds every record automatically. Without an API, registration itself is a manual step done by the ZimboBuz team when an order comes in.
 
 **Questions to ask name.co.zw:**
 1. Do you have a reseller or partner account, and what are the wholesale prices per domain type?
@@ -243,7 +245,7 @@ ZimboBuz is **proprietary, closed-source software**. Customers rent access (SaaS
 - **No copyleft code:** do not copy code from GPL/AGPL projects such as ERPNext/Frappe or Odoo Community into ZimboBuz. They can be studied for ideas only. Prefer libraries under MIT, BSD, Apache 2.0 or ISC licences, and check every new dependency's licence before adding it.
 - **Business logic stays on the server:** pricing, tax, payroll and fiscalisation rules run in the database and server functions, not in browser or app code that can be copied.
 - **Mobile apps and PWA** ship only compiled, minified front-end code; secrets never go into app builds.
-- **Secrets** live in environment settings (Supabase, Vercel), never in the repository; `.env` files are always git-ignored.
+- **Secrets** live in environment settings (local `.env` during development, Azure Key Vault in production), never in the repository; `.env` files are always git-ignored.
 - **Customer contracts:** terms of service and a licence agreement state that the software and website templates remain ZimboBuz property; the customer owns their own data and can export it.
 - **On-premise deployments (Enterprise):** delivered as a licensed, compiled build with a licence key, not as source code.
 - **Brand protection:** register the ZimboBuz name and logo as a trademark with ZIPO (Zimbabwe Intellectual Property Office); register the company and own the domains in the company's name.
@@ -252,7 +254,7 @@ ZimboBuz is **proprietary, closed-source software**. Customers rent access (SaaS
 Development is done by AI (Claude), in small testable steps, each with automated tests, reviewed and tried by the owner before moving on. Decisions are recorded in this folder so later sessions keep context.
 
 What the owner handles:
-- Accounts and credentials: Azure subscription (through the Microsoft partner/CSP relationship) before launch, domain registrar accounts (name.co.zw for `.co.zw`, and an international registrar), Microsoft partner/CSP enrolment with a distributor, Paynow merchant, ZIMRA fiscalisation registration and software approval, WhatsApp Business API, domains, hosting (Supabase and Vercel are connected)
+- Accounts and credentials: Azure subscription (through the Microsoft partner/CSP relationship) before launch, domain registrar accounts (name.co.zw for `.co.zw`, and an international registrar), Microsoft partner/CSP enrolment with a distributor, Paynow merchant, ZIMRA fiscalisation registration and software approval, WhatsApp Business API, domains
 - Testing with real businesses
 - Sales, onboarding and support
 - Product decisions: priorities, pricing, when something is ready to ship
@@ -266,7 +268,7 @@ What the owner handles:
 - Websites and stores are as modern as possible, with motion throughout (per-template motion styles, company-controlled intensity, fast on low-end phones).
 - `.co.zw` domains are registered through name.co.zw, with nameservers pointed to ZimboBuz DNS.
 - ZimboBuz sells domains; the domain drives one-click setup of the website, store, ERP and Microsoft 365.
-- Build on Vercel + Supabase; move to Azure (Johannesburg) for commercial launch; code stays portable (standard PostgreSQL, adapters for provider services). No plain cPanel hosting.
+- Build locally on the owner's computer; move to Azure (Johannesburg) for commercial launch; code stays portable (standard PostgreSQL, adapters for provider services). No plain cPanel hosting.
 - Email hosting is Microsoft 365, resold through the CSP programme, with each company in its own tenant.
 - ZimboBuz is proprietary and closed source; no GPL/AGPL code is copied in.
 - Build on the Bromadex and Bravura codebases, converted to multi-tenant, rather than starting from scratch.
