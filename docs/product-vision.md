@@ -84,13 +84,29 @@ Companies get professional mailboxes on their own domain (e.g. `sales@company.co
 ### Domain sales (feeds website, ERP and Microsoft 365 setup)
 ZimboBuz sells domains, and the domain becomes the backbone of each company's setup.
 
-- **What we sell:** `.co.zw` (through a local Zimbabwean registrar partner) and `.com`, `.africa`, `.net` etc. (through an international registrar with an API; Vercel can also register many generic domains).
+- **What we sell:** Zimbabwean domains (`.co.zw`, `.org.zw`, `.ac.zw`) through **[name.co.zw](https://name.co.zw/)**, and `.com`, `.africa`, `.net` etc. through an international registrar with an API (Vercel can register many generic domains).
 - **Registered in the customer's name** so they own it; ZimboBuz manages the DNS.
 - **Customers can also bring an existing domain:** they point its nameservers to ZimboBuz, or we transfer it in.
 - **Yearly renewals** give recurring income; automatic renewal reminders by email and WhatsApp, renewal billed with the subscription.
 
+### Local registrar: name.co.zw
+- Registers `.co.zw`, `.org.zw` and `.ac.zw`; from US$5.99/year or ZiG equivalent; pays via Paynow (verified merchant); nameserver changes are instant. Operated by Web Enchanter (Pvt) Ltd.
+- Its website lists no reseller programme, no API and no hosting; it is used for domain registration only.
+- **How automation still works:** register the domain at name.co.zw in the customer's name, point its nameservers to ZimboBuz-managed DNS (Vercel DNS or Cloudflare) once, then ZimboBuz adds every record automatically. Without an API, registration itself is a manual step done by the ZimboBuz team when an order comes in.
+
+**Questions to ask name.co.zw:**
+1. Do you have a reseller or partner account, and what are the wholesale prices per domain type?
+2. Is there an API for checking availability, registering, renewing and changing nameservers?
+3. Can domains be registered in the customer's name while managed from our reseller account?
+4. Can renewals be automatic and billed to our account, and how far in advance are renewal reminders sent?
+5. Can we set custom nameservers at registration, so domains point to ZimboBuz DNS from day one?
+6. How are transfers handled (into name.co.zw from another registrar, and out if a customer leaves)?
+7. What documents does the registry require for `.co.zw` (company registration, ID), and how long does approval take?
+8. Can we pay in USD and ZiG on account, and do you invoice monthly?
+9. What support do you offer partners (contact person, response times)?
+
 ### One-click setup flow
-1. Company searches for and buys a domain inside ZimboBuz (or connects an existing one).
+1. Company searches for and buys a domain inside ZimboBuz (or connects an existing one); `.co.zw` orders are registered at name.co.zw.
 2. ZimboBuz creates the DNS zone and adds website, store and ERP records (`company.co.zw`, `www`, `erp`) with SSL.
 3. ZimboBuz creates the company's **Microsoft 365 tenant**, adds the domain to it and publishes Microsoft's verification record automatically, then completes verification.
 4. ZimboBuz adds the email records: MX, autodiscover, SPF, DKIM and DMARC.
@@ -205,7 +221,7 @@ ZimboBuz is **proprietary, closed-source software**. Customers rent access (SaaS
 Development is done by AI (Claude), in small testable steps, each with automated tests, reviewed and tried by the owner before moving on. Decisions are recorded in this folder so later sessions keep context.
 
 What the owner handles:
-- Accounts and credentials: domain registrar accounts (local `.co.zw` partner and an international registrar), Microsoft partner/CSP enrolment with a distributor, Paynow merchant, ZIMRA fiscalisation registration and software approval, WhatsApp Business API, domains, hosting (Supabase and Vercel are connected)
+- Accounts and credentials: domain registrar accounts (name.co.zw for `.co.zw`, and an international registrar), Microsoft partner/CSP enrolment with a distributor, Paynow merchant, ZIMRA fiscalisation registration and software approval, WhatsApp Business API, domains, hosting (Supabase and Vercel are connected)
 - Testing with real businesses
 - Sales, onboarding and support
 - Product decisions: priorities, pricing, when something is ready to ship
@@ -217,6 +233,7 @@ What the owner handles:
 - Mobile apps are for staff (ERP) only, not for customers.
 - PWA for everyone; branded APK/iOS builds on a premium plan.
 - Websites and stores are as modern as possible, with motion throughout (per-template motion styles, company-controlled intensity, fast on low-end phones).
+- `.co.zw` domains are registered through name.co.zw, with nameservers pointed to ZimboBuz DNS.
 - ZimboBuz sells domains; the domain drives one-click setup of the website, store, ERP and Microsoft 365.
 - Platform hosting on Vercel + Supabase; no plain cPanel hosting at launch.
 - Email hosting is Microsoft 365, resold through the CSP programme, with each company in its own tenant.
