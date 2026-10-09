@@ -112,6 +112,37 @@ For customers requiring data in Zimbabwe: a private install in a Zimbabwean data
 #### Not offered
 No plain cPanel web hosting at launch; customer websites are hosted as part of ZimboBuz.
 
+### Backend choice: Supabase and alternatives
+
+**Decision:** stay on **Supabase** (PostgreSQL, logins, storage, realtime, server functions).
+
+Why:
+- Bravura and Bromadex are already built on it, so their code, RLS security rules and SQL logic carry over.
+- It is standard PostgreSQL underneath, so there is no lock-in.
+- Apache 2.0 licence: can be self-hosted on Azure or a client's server for a closed-source product.
+- The Azure move is either self-hosted Supabase on Azure or Azure PostgreSQL with our SQL migrations.
+
+Alternatives considered:
+
+| Option | What it is | Fit |
+|---|---|---|
+| Firebase (Google) | NoSQL database, auth, storage, functions; strong offline | Poor: no SQL for accounting/reports, Google lock-in, no Azure path, existing code would not carry over |
+| Appwrite | Open-source, self-hostable backend | Fair: runs on Azure, but its database is weaker than PostgreSQL for ERP work |
+| Nhost | PostgreSQL + Hasura GraphQL + auth + storage | Fair: PostgreSQL-based but smaller vendor and a different way of working |
+| Convex | Reactive TypeScript backend | Poor: proprietary database, lock-in, no Azure path |
+| PocketBase | Single binary with SQLite | Poor: too small for a multi-company ERP |
+| AWS Amplify | Amazon's backend platform | Poor: ties to AWS while the target is Azure |
+| Build our own | Azure PostgreSQL or Neon + Entra ID / Better Auth / Auth.js + Azure Blob + Node API with Drizzle or Prisma | Strongest long-term control and cleanest Azure fit, but slower to build and more rework of existing code |
+
+### Offline sync: PowerSync
+
+For offline-first POS and staff apps (load-shedding, expensive data), add **PowerSync**:
+- Keeps a local SQLite copy of the data each user needs on their phone, tablet or browser, and syncs changes both ways with PostgreSQL when the connection returns.
+- Works with Supabase and with any PostgreSQL, so it continues to work after the move to Azure and for on-premise installs (PowerSync can be self-hosted; check its licence terms for closed-source commercial use before committing).
+- Sync rules decide what each device holds (e.g. only that branch's products, prices and today's sales), keeping data use small.
+- Offline writes (sales, stock counts) go into an upload queue; server-side rules validate them and resolve conflicts (e.g. stock never negative, ZIMRA receipt numbering).
+- Alternative considered: **ElectricSQL** (similar PostgreSQL sync); revisit if PowerSync's terms or pricing don't fit.
+
 ### On-premise deployment (client's own server)
 
 Supabase is open source (Apache 2.0) and self-hostable, so building on Supabase does not prevent clients from keeping their data on their own servers.
@@ -301,6 +332,7 @@ What the owner handles:
 - Websites and stores are as modern as possible, with motion throughout (per-template motion styles, company-controlled intensity, fast on low-end phones).
 - `.co.zw` domains are registered through name.co.zw, with nameservers pointed to ZimboBuz DNS.
 - ZimboBuz sells domains; the domain drives one-click setup of the website, store, ERP and Microsoft 365.
+- Backend stays on Supabase (PostgreSQL); PowerSync for offline sync in POS and staff apps.
 - Enterprise clients can run ZimboBuz on their own servers using self-hosted Supabase, protected by licence agreement, licence key and keeping key logic in ZimboBuz cloud services.
 - Build on Vercel + Supabase; move to Azure (Johannesburg) for commercial launch; code stays portable (standard PostgreSQL, adapters for provider services). No plain cPanel hosting.
 - Email hosting is Microsoft 365, resold through the CSP programme, with each company in its own tenant.
