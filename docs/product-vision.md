@@ -72,6 +72,37 @@ Companies get professional mailboxes on their own domain (e.g. `sales@company.co
 - Once-off migration fee for moving mail from an existing host (cPanel, Gmail, other)
 - Licences are billed in USD by Microsoft; ZiG pricing follows the company's exchange-rate policy
 
+## Hosting and domains
+
+### Platform hosting
+- **Vercel** serves every company's website, store and ERP from one deployment, recognising the company by domain (`company.co.zw`, `erp.company.co.zw`). Custom domains are attached through Vercel's API with automatic free SSL.
+- **Supabase** provides the database, logins, file storage and server functions. Start with one shared database where every row carries a company id and row-level security keeps companies apart; move very large customers to their own database later if needed.
+- Choose the nearest available region (South Africa if offered, otherwise Europe) and test speed from Zimbabwe before launch.
+- Rough starting cost: about $50–100/month (Vercel Pro + Supabase Pro), growing with usage. Check current prices.
+- No plain cPanel web hosting at launch; customer websites are hosted as part of ZimboBuz.
+
+### Domain sales (feeds website, ERP and Microsoft 365 setup)
+ZimboBuz sells domains, and the domain becomes the backbone of each company's setup.
+
+- **What we sell:** `.co.zw` (through a local Zimbabwean registrar partner) and `.com`, `.africa`, `.net` etc. (through an international registrar with an API; Vercel can also register many generic domains).
+- **Registered in the customer's name** so they own it; ZimboBuz manages the DNS.
+- **Customers can also bring an existing domain:** they point its nameservers to ZimboBuz, or we transfer it in.
+- **Yearly renewals** give recurring income; automatic renewal reminders by email and WhatsApp, renewal billed with the subscription.
+
+### One-click setup flow
+1. Company searches for and buys a domain inside ZimboBuz (or connects an existing one).
+2. ZimboBuz creates the DNS zone and adds website, store and ERP records (`company.co.zw`, `www`, `erp`) with SSL.
+3. ZimboBuz creates the company's **Microsoft 365 tenant**, adds the domain to it and publishes Microsoft's verification record automatically, then completes verification.
+4. ZimboBuz adds the email records: MX, autodiscover, SPF, DKIM and DMARC.
+5. Mailboxes are created from the ERP's HR employee list, and staff can sign in to the ERP with their Microsoft account.
+6. The setup screen shows a checklist with live status (domain active, website live, SSL issued, Microsoft verified, email flowing).
+
+### Data, law and reliability
+- **Zimbabwe Cyber and Data Protection Act (2021)**, with POTRAZ as the data protection authority: take legal advice on cross-border data transfer and include a data processing agreement in customer contracts.
+- **Local hosting option (Enterprise):** for government, banks and mining companies that require data in Zimbabwe, run in a local data centre or on the customer's servers with a licence key.
+- **Backups:** daily automatic backups with point-in-time restore, plus a "download all my data" export per company.
+- **Reliability:** uptime monitoring, a public status page, error tracking, and a staging environment so changes are tested before reaching customers.
+
 ## Module catalogue
 
 Modules come from the consolidated list in [erp-feature-research.md](erp-feature-research.md). Each module has its own feature toggles.
@@ -174,7 +205,7 @@ ZimboBuz is **proprietary, closed-source software**. Customers rent access (SaaS
 Development is done by AI (Claude), in small testable steps, each with automated tests, reviewed and tried by the owner before moving on. Decisions are recorded in this folder so later sessions keep context.
 
 What the owner handles:
-- Accounts and credentials: Microsoft partner/CSP enrolment with a distributor, Paynow merchant, ZIMRA fiscalisation registration and software approval, WhatsApp Business API, domains, hosting (Supabase and Vercel are connected)
+- Accounts and credentials: domain registrar accounts (local `.co.zw` partner and an international registrar), Microsoft partner/CSP enrolment with a distributor, Paynow merchant, ZIMRA fiscalisation registration and software approval, WhatsApp Business API, domains, hosting (Supabase and Vercel are connected)
 - Testing with real businesses
 - Sales, onboarding and support
 - Product decisions: priorities, pricing, when something is ready to ship
@@ -186,6 +217,8 @@ What the owner handles:
 - Mobile apps are for staff (ERP) only, not for customers.
 - PWA for everyone; branded APK/iOS builds on a premium plan.
 - Websites and stores are as modern as possible, with motion throughout (per-template motion styles, company-controlled intensity, fast on low-end phones).
+- ZimboBuz sells domains; the domain drives one-click setup of the website, store, ERP and Microsoft 365.
+- Platform hosting on Vercel + Supabase; no plain cPanel hosting at launch.
 - Email hosting is Microsoft 365, resold through the CSP programme, with each company in its own tenant.
 - ZimboBuz is proprietary and closed source; no GPL/AGPL code is copied in.
 - Build on the Bromadex and Bravura codebases, converted to multi-tenant, rather than starting from scratch.
