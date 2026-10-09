@@ -2,6 +2,14 @@
 
 Status: brainstorming. This records decisions made so far; nothing here is built yet.
 
+
+## Document map
+- [product-vision.md](product-vision.md) — this document: what ZimERP is and how the business runs
+- [erp-feature-research.md](erp-feature-research.md) — competitor research and consolidated features
+- [release-1-spec.md](release-1-spec.md) — Release 1 (Wave 1) scope and acceptance criteria
+- [architecture.md](architecture.md) — multi-tenancy, domains, website builder, offline sync, testing, disaster recovery, API
+- [financial-plan.md](financial-plan.md) — startup costs, running costs, break-even, funding
+
 ## Pitch
 
 One Zimbabwean business platform with every feature competitors offer (see [erp-feature-research.md](erp-feature-research.md)), ZiG-ready, offline-capable, with transparent pricing, sold under each company's own brand.
@@ -570,6 +578,121 @@ Two of the owner's existing projects already cover much of ZimERP for a single c
 2. Rotate any API key that has ever been committed to a repository, and make sure `.env` files are git-ignored everywhere.
 3. Turn on two-step verification for GitHub, Supabase, Vercel and email accounts.
 
+## Regulatory change management
+
+Tax and currency rules change often in Zimbabwe; a wrong payslip or invoice loses customers fast.
+
+- **Rules as data, not code:** PAYE tables, NSSA rates and ceilings, AIDS Levy, ZIMDEF, VAT rates, withholding taxes and statutory deadlines are stored in versioned, effective-dated tables, so a change is a data update with a start date, not a new release.
+- **Owner of the rules:** a named person (with an accountant/tax adviser on retainer) monitors ZIMRA, NSSA, RBZ and Ministry of Finance announcements, including the national budget and mid-term reviews.
+- **Change process:** announcement → rule update in Staging → accountant checks test payslips/invoices → release → customer notice (WhatsApp, email, in-app) explaining what changed and from when.
+- **Target:** routine rate changes live within 5 working days of announcement, and before their effective date when announced in advance.
+- **Currency policy changes** (e.g. new currency rules, mandatory rates, payment restrictions): companies already control their own exchange rates; any new legal requirement is added as a company setting with a sensible default.
+- **History:** past documents always keep the rules and rates that applied at the time.
+
+## Risks and mitigations
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| ZIMRA fiscalisation approval delayed | VAT-registered customers can't fully switch | Start the approval process early; launch Release 1 without fiscalisation; partner with an approved fiscal device provider meanwhile |
+| Dependence on Paynow | Payments stop if Paynow has problems or changes terms | Payment adapter; add Pesepay and EcoCash direct as backups; cash and manual payment methods always available |
+| Currency policy changes | Pricing, reports and invoices affected | Company-set rates, effective-dated rules, quick regulatory change process |
+| Power and internet outages | Customers can't work; support goes down | Offline-first POS; support team with backup power and data; cloud hosting outside the grid |
+| Competitors copy features | Lower differentiation | Speed of delivery, local support, partner network, integrated website + ERP + email offering |
+| Quality of AI-written code | Bugs in money, tax or security | Tests for every feature, accountant-checked scenarios, security scanning, staged releases, owner review |
+| Key-person dependency (owner) | Business stops if the owner is unavailable | Written docs (this folder), shared account access in a password manager, second admin for all critical accounts, early first hire |
+| Data breach | Loss of trust, legal penalties | Security plan, isolation tests, penetration testing, incident plan |
+| Slow adoption by SMEs | Revenue below plan | Free plan, field agents, accountant partners, pilots and testimonials |
+| Microsoft or hosting price increases | Lower margins | Margins built into pricing, annual review, portable architecture |
+| Public repository exposure | Plans and code copied | Make repositories private; rotate exposed keys |
+
+## Legal and company setup
+
+- Register ZimERP (or a holding company) as a private limited company; register for tax with ZIMRA, and for VAT when turnover requires it.
+- Trademark search and registration of the name and logo with ZIPO.
+- Contract templates (with a lawyer): Terms of Service, Service Level Agreement (by plan), Data Processing Agreement, Privacy Policy, Acceptable Use Policy, on-premise licence agreement, partner/reseller agreement, field agent agreement, employee and contractor agreements with NDA and IP assignment.
+- Microsoft CSP, Paynow and registrar agreements signed in the company's name.
+- Business bank accounts in USD and ZiG.
+
+## Team and hiring plan
+
+| Stage | Roles |
+|---|---|
+| Building | Owner (product decisions, testing, sales); AI does development; accountant/tax adviser on retainer for checking logic |
+| Pilot | + 1 implementation and support person (sets up pilots, trains staff, answers WhatsApp) |
+| Launch | + 1 support person; first field agents (commission); accountant partners |
+| ~100 customers | + sales lead; + second implementation consultant; part-time developer to review AI-written code and handle on-premise installs |
+| ~250+ customers | Support team sized at ~1 per 150–250 customers; customer success role; dedicated Enterprise account manager |
+
+How AI development fits: AI writes code and tests in small steps; the owner (later a developer) reviews and tests each step; decisions are recorded in this folder so every session keeps context.
+
+## Roadmap (proposed dates)
+
+| When | Milestone |
+|---|---|
+| Oct 2026 | Vision, research, Release 1 spec and architecture documented; repositories private |
+| Nov 2026 – Feb 2027 | Build Release 1 (platform, core, POS, inventory, invoicing, Paynow, 2 website/store templates); start ZIMRA and Paynow partner conversations; register company and trademark |
+| Mar – Apr 2027 | Pilot with 5–10 businesses (including Bromadex); fix issues; penetration test |
+| May 2027 | Public launch: founding-customer pricing, first paying customers |
+| Jun – Aug 2027 | Wave 2: purchasing, payroll, tax returns, ZIMRA fiscalisation, Microsoft 365 automation, 5 templates, branded Android app |
+| Sep 2027 | Move production to Azure (Johannesburg) |
+| Q4 2027 | Wave 3: CRM, projects, manufacturing, helpdesk; ZITF/Mine Entra presence |
+| 2028 | Wave 4: industry modules (Mining and Construction first), AI assistant, IoT; ISO 27001 preparation |
+
+Dates are targets to review monthly against progress and pilot feedback.
+
+## Pilot programme
+
+- **Who:** 5–10 businesses across 2–3 types (e.g. grocery/retail, hardware, one service business), plus Bromadex; at least one in Bulawayo and one in Harare; mix of VAT-registered and small.
+- **What they get:** free use for the pilot period (4–8 weeks), free setup and training, founding-customer pricing afterwards.
+- **What we ask:** daily use, a weekly 15-minute feedback call, permission to record a testimonial and case study.
+- **What we measure:** time to first sale, daily active users, sales processed, offline sessions synced correctly, support questions per week, bugs found, willingness to pay (would they pay today, which plan).
+- **Success criteria:** at least 70% of pilots still using it daily at the end, and at least half convert to paid.
+
+## Brand identity
+
+- Name: **ZimERP**. Check availability: ZIPO trademark search, company name, `zimerp.co.zw`, `zimerp.com`, social media handles.
+- Tagline options: "Run your whole business in one place", "Built for Zimbabwe business".
+- Logo and colour palette that work on dark and light backgrounds, on small phone screens and on receipts (black and white).
+- Brand guide: logo use, colours, fonts, tone of voice (clear, practical, local), icon style.
+- The ZimERP website, templates and demo companies all use the brand consistently.
+
+## Supported devices
+
+| Device | Minimum |
+|---|---|
+| Android phones/tablets (POS and staff app) | Android 9+, 3 GB RAM recommended, Chrome |
+| iPhone/iPad | iOS 16+ (Safari PWA; branded iOS app later) |
+| Computers | Latest Chrome, Edge, Firefox or Safari |
+| Receipt printers | Bluetooth or USB ESC/POS thermal printers, 58mm and 80mm |
+| Barcode scanners | USB or Bluetooth scanners in keyboard mode, or the device camera |
+| Connectivity | Works offline; syncs on 3G or better |
+
+The list is published in the help centre and reviewed every six months.
+
+## Customer exit and data ownership
+
+- Companies own their data. Full export at any time (Excel/CSV for all records, PDF for documents, files as a ZIP), including in read-only mode.
+- On cancellation: data kept read-only for 90 days, then permanently deleted with written confirmation (backups expire on their normal cycle).
+- Domains stay registered in the customer's name; we help transfer DNS and email (Microsoft 365 tenants belong to the customer and continue independently).
+- No exit fees. A clean exit builds trust and referrals.
+
+## Customer success
+
+- **Health score per company:** logins, active users, sales recorded, modules used, support tickets, payment status.
+- **At-risk alerts:** falling usage, failed payments, repeated complaints; the team contacts the company before it leaves.
+- **Growth prompts:** suggest the next module or plan when a company hits limits or would benefit (e.g. many manual stock adjustments → stock takes).
+- **Quarterly check-ins** for Pro and Enterprise customers.
+
+## Industry benchmarks (later feature)
+
+- Anonymous, aggregated comparisons for companies that opt in: e.g. "your gross margin vs similar hardware stores in Bulawayo", average basket size, stock turnover.
+- Only aggregated figures from at least 5 companies are shown; no company is ever identifiable.
+- A differentiator competitors cannot easily copy, and useful content for marketing (industry reports).
+
+## ZimERP business dashboard (internal)
+
+One internal dashboard for running ZimERP: sign-ups per week, free-to-paid conversion, monthly recurring revenue, churn, average revenue per company, customer health scores, support volume and response times, platform uptime and errors, pilot progress, cash and runway (see [financial-plan.md](financial-plan.md)).
+
 ## Ownership and licensing
 
 ZimERP is **proprietary, closed-source software**. Customers rent access (SaaS); they never receive the source code.
@@ -611,7 +734,7 @@ What the owner handles:
 - Build on the Bromadex and Bravura codebases, converted to multi-tenant, rather than starting from scratch.
 
 ## Open questions
-- Confirm release waves: which modules and features ship first?
+- Review the Release 1 scope in [release-1-spec.md](release-1-spec.md).
 - Do the mobile apps include every module, or daily tasks only (POS, stock, approvals, dashboard) with the rest on the web?
 - Validate the pricing proposal with pilot customers; confirm module counts per plan.
 - First target industries and pilot customers (Mining and Construction is a candidate given existing modules).
