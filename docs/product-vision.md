@@ -133,6 +133,19 @@ Two of the owner's existing projects already cover much of ZimboBuz for a single
 8. **Mining and Construction bundle:** SHEQ, fleet, fuel, contractors, campsite, meals, batch plant. An industry no competitor targets directly.
 9. **Engineering standards:** no hard deletes (archive only), audit trail on every record, permission checks enforced in the database, screen codes and a command palette.
 
+## Ownership and licensing
+
+ZimboBuz is **proprietary, closed-source software**. Customers rent access (SaaS); they never receive the source code.
+
+- **Repositories private:** ZimboBuz, Bromadex and Bravura repositories must be private on GitHub. Only people under a written agreement (NDA and IP assignment) get access.
+- **No copyleft code:** do not copy code from GPL/AGPL projects such as ERPNext/Frappe or Odoo Community into ZimboBuz. They can be studied for ideas only. Prefer libraries under MIT, BSD, Apache 2.0 or ISC licences, and check every new dependency's licence before adding it.
+- **Business logic stays on the server:** pricing, tax, payroll and fiscalisation rules run in the database and server functions, not in browser or app code that can be copied.
+- **Mobile apps and PWA** ship only compiled, minified front-end code; secrets never go into app builds.
+- **Secrets** live in environment settings (Supabase, Vercel), never in the repository; `.env` files are always git-ignored.
+- **Customer contracts:** terms of service and a licence agreement state that the software and website templates remain ZimboBuz property; the customer owns their own data and can export it.
+- **On-premise deployments (Enterprise):** delivered as a licensed, compiled build with a licence key, not as source code.
+- **Brand protection:** register the ZimboBuz name and logo as a trademark with ZIPO (Zimbabwe Intellectual Property Office); register the company and own the domains in the company's name.
+
 ## How it gets built
 Development is done by AI (Claude), in small testable steps, each with automated tests, reviewed and tried by the owner before moving on. Decisions are recorded in this folder so later sessions keep context.
 
@@ -149,6 +162,7 @@ What the owner handles:
 - Mobile apps are for staff (ERP) only, not for customers.
 - PWA for everyone; branded APK/iOS builds on a premium plan.
 - Websites and stores are as modern as possible, with motion throughout (per-template motion styles, company-controlled intensity, fast on low-end phones).
+- ZimboBuz is proprietary and closed source; no GPL/AGPL code is copied in.
 - Build on the Bromadex and Bravura codebases, converted to multi-tenant, rather than starting from scratch.
 
 ## Open questions
