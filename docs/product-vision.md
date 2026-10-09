@@ -216,6 +216,58 @@ ZimERP sells domains, and the domain becomes the backbone of each company's setu
 - **Backups:** daily automatic backups with point-in-time restore, plus a "download all my data" export per company.
 - **Reliability:** uptime monitoring, a public status page, error tracking, and a staging environment so changes are tested before reaching customers.
 
+## Payments
+
+Payments flow in two directions: a company's customers paying the company, and companies paying ZimERP.
+
+### 1. Customers paying companies (store, POS, invoices)
+
+**Primary gateway: Paynow.** One integration covers EcoCash, OneMoney, InnBucks, Zimswitch (local bank cards) and Visa/Mastercard, in USD and ZiG.
+- **Store and invoices:** "Pay now" button or payment link to Paynow; the invoice/order is marked paid automatically when Paynow confirms.
+- **POS:** EcoCash express checkout: the cashier enters the customer's number and the customer approves with their PIN on their phone.
+- **QR codes and payment links** on invoices, receipts, quotes and WhatsApp messages.
+
+**Later options:**
+- **Pesepay** (another Zimbabwean gateway) as a backup or for fee comparison
+- **Direct EcoCash merchant API** for very high-volume companies wanting lower fees
+- **Bank card terminals:** recorded as "card" at first; integrate with a bank's terminal later if the bank allows
+- **ZIPIT and bank transfers:** recorded and matched against imported bank statements
+- **Cash** in USD and ZiG with per-currency till sessions (see P1 features)
+
+Stripe and most international gateways do not serve Zimbabwean merchants, so local gateways are the priority.
+
+#### Who holds the money
+**Decision (recommended): each company connects its own Paynow account; money goes straight to the company and ZimERP never holds funds.**
+- Avoids ZimERP needing Reserve Bank of Zimbabwe approval as a payment operator (National Payment Systems Act); take legal advice before ever holding customer funds.
+- Companies trust it more.
+- Setup: the company enters its Paynow integration ID and key in the customisation interface (stored encrypted, server-side only), or the ZimERP team helps them register with Paynow as part of "done for you".
+
+#### What ZimERP does with every payment
+- Receives Paynow's result notification and **marks the invoice/order paid**; re-checks status by polling if a notification is missed.
+- **Matches payments to invoices**, including partial payments and deposits; unmatched payments go to a review list.
+- **Records gateway fees and IMTT** (intermediated money transfer tax) as expenses in the right currency.
+- **Daily settlement report:** what Paynow reports versus what reached the bank.
+- Handles refunds, and change given as store credit or an EcoCash refund.
+- Every gateway goes through one **payment adapter** module, so adding Pesepay or EcoCash direct does not touch the rest of the system.
+
+### 2. Companies paying ZimERP (subscriptions)
+- **One monthly invoice** covering ERP modules, Microsoft 365 mailboxes, domains and premium apps, sent by WhatsApp and email with a Paynow link.
+- **Payment methods:** EcoCash, OneMoney, InnBucks, local cards, Visa/Mastercard (useful for diaspora-owned businesses) and bank transfer.
+- **Automatic reminders** before and after the due date.
+- **Grace period, then read-only mode.** Never delete data or block data export for non-payment.
+- **Annual prepayment discount** for cash flow and exchange-rate protection.
+- **Priced in USD**, ZiG accepted at ZimERP's published rate.
+- **Per-transaction fees:** because money goes straight to companies, ZimERP cannot easily take a cut; build the value into subscription pricing, or ask Paynow about a partner/referral arrangement.
+
+### Questions to ask Paynow
+1. Is there a partner, reseller or referral programme for platforms that onboard many merchants?
+2. Can a platform onboard merchants on their behalf (documents, approval time)?
+3. Which methods support express checkout (EcoCash, OneMoney, InnBucks), in USD and ZiG?
+4. Fees per method and currency, and settlement times to the bank.
+5. Is there a sandbox/test environment and webhook (result URL) documentation?
+6. Is recurring billing or tokenised card payment supported for subscriptions?
+7. Is there a settlement/transactions report or API for automatic reconciliation?
+
 ## Module catalogue
 
 Modules come from the consolidated list in [erp-feature-research.md](erp-feature-research.md). Each module has its own feature toggles.
@@ -318,13 +370,14 @@ ZimERP is **proprietary, closed-source software**. Customers rent access (SaaS);
 Development is done by AI (Claude), in small testable steps, each with automated tests, reviewed and tried by the owner before moving on. Decisions are recorded in this folder so later sessions keep context.
 
 What the owner handles:
-- Accounts and credentials: Azure subscription (through the Microsoft partner/CSP relationship) before launch, domain registrar accounts (name.co.zw for `.co.zw`, and an international registrar), Microsoft partner/CSP enrolment with a distributor, Paynow merchant, ZIMRA fiscalisation registration and software approval, WhatsApp Business API, domains, hosting (Supabase and Vercel are connected)
+- Accounts and credentials: Paynow merchant account for ZimERP subscriptions (and a partner arrangement if available), Azure subscription (through the Microsoft partner/CSP relationship) before launch, domain registrar accounts (name.co.zw for `.co.zw`, and an international registrar), Microsoft partner/CSP enrolment with a distributor, Paynow merchant, ZIMRA fiscalisation registration and software approval, WhatsApp Business API, domains, hosting (Supabase and Vercel are connected)
 - Testing with real businesses
 - Sales, onboarding and support
 - Product decisions: priorities, pricing, when something is ready to ship
 - Legal: company registration, terms of service, data protection
 
 ## Decisions log
+- Payments: Paynow first; each company connects its own Paynow account so money goes straight to them and ZimERP never holds funds.
 - Product name is **ZimERP** (formerly ZimboBuz). Check the name is free (ZIPO trademark search, `.co.zw`/`.com` domains, company name) before registering it.
 - Exchange rates are set by each company (no automatic RBZ feed).
 - Interface is English only.
