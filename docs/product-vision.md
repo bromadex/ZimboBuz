@@ -295,20 +295,60 @@ The mobile app focuses on daily tasks; heavy work (full accounting, payroll runs
 - Owner dashboard: sales by currency, cash, debtors, low stock
 - Notifications: low stock, large sales, till short at close
 
-## Pricing ideas (not decided)
-- Free: core plus one module, one user
-- Roughly $10–20/month per extra module
-- Bundles (e.g. Retail, Manufacturing, Hospitality) cheaper than separate modules
-- Once-off setup fee for "done for you" (domain, design, data import)
-- Premium tier for branded APK and iOS apps
-- Prices shown in USD and ZiG, payable monthly by EcoCash or card
-- Benchmark: Unicorn Solutions charges $200–1,000/month
+## Pricing (proposal, to validate with pilot customers)
 
-### Other revenue ideas
-- Small fee per Paynow/EcoCash transaction
-- Hardware resale: receipt printers, barcode scanners
-- Data migration and custom development
-- Referral fees from lenders using sales data (with the company's consent)
+Benchmark: Unicorn Solutions publishes $200 / $500 / $1,000 per month. All figures below are USD and are a starting proposal.
+
+**Structure:** a plan per company with users and modules included, plus add-ons. Pure per-user pricing scares small shops; pure per-module pricing is confusing.
+
+### Plans (per company, per month)
+
+| Plan | Price | Users | Modules | Includes |
+|---|---|---|---|---|
+| Starter | Free | 1 | Core + 1 (POS or invoicing) | ZimERP subdomain (`shop.zimerp.co.zw`), 1 website template with "Powered by ZimERP" badge, PWA |
+| Business | $29 | 5 | 3 | Own domain, website + store, Paynow, WhatsApp receipts, ZiG/USD |
+| Growth | $79 | 15 | 6 | 2 branches, approvals, advanced reports, AI assistant (basic), priority support |
+| Pro | $199 | 50 | All standard modules | 5 branches, branded Android app, API, custom workflows |
+| Enterprise | From $499 | Unlimited | All, including industry modules | Branded iOS app, dedicated setup, SLA, dedicated database, on-premise option |
+
+### Add-ons (per month)
+- Extra user: $3–5
+- Extra standard module: $10–20
+- Industry module (healthcare, microfinance, mining and construction, etc.): $30–50
+- Extra branch: $10
+- ZIMRA fiscalisation: $10–15 per till/device
+- Branded Android app on lower plans: $20; branded iOS app: $40 (client also pays Apple's $99/year)
+- AI assistant beyond the included allowance, and SMS bundles: usage-based
+
+### Resold services
+- Microsoft 365: Microsoft price plus about 10–20%, on the same invoice
+- `.co.zw` domains: cost from $5.99/year (name.co.zw), sell at about $15–20/year; other domains at cost plus margin
+
+### Once-off fees
+- Self-service setup: free
+- "Done for you" website and store setup: $150–300
+- Data migration (Excel, Sage Pastel, QuickBooks): $100–500 depending on size
+- On-site training: per day
+- On-premise install: setup fee plus annual licence (e.g. from $5,000/year), support priced separately
+
+### Rules
+- Annual prepayment: 2 months free
+- Prices in USD; ZiG accepted at ZimERP's published rate, reviewed monthly
+- Founding customers (first 20–50) keep launch pricing for life in exchange for feedback and testimonials
+- Discounts for NGOs, schools and startups
+- Accountant/bookkeeper partners: 20% recurring commission on referred clients, or free ZimERP for their own practice
+- Starter (free) plan is self-service only, to keep support costs down
+
+### Sanity check
+- Hosting cost per company is cents to a few dollars a month; support time is the real cost.
+- 100 companies at an average ~$60/month ≈ $6,000/month; 500 companies ≈ $30,000/month, plus setup fees, domains and Microsoft 365 margin.
+- Validate by showing pilot customers the plan table: which would they choose, and what is missing?
+
+### Other revenue
+- Hardware resale: receipt printers, barcode scanners, cash drawers, low-cost Android tablets
+- Custom development and integrations
+- Paynow partner/referral arrangement, if available (ZimERP does not take a cut of transactions)
+- Lender referral fees using sales data, only with the company's consent
 
 ## Go-to-market ideas
 - Pilot: 5–10 businesses free for a month in exchange for feedback and testimonials
@@ -396,6 +436,6 @@ What the owner handles:
 ## Open questions
 - Confirm release waves: which modules and features ship first?
 - Do the mobile apps include every module, or daily tasks only (POS, stock, approvals, dashboard) with the rest on the web?
-- Final pricing per module, bundles, setup fees, premium app tier.
+- Validate the pricing proposal with pilot customers; confirm module counts per plan.
 - First target industries and pilot customers (Mining and Construction is a candidate given existing modules).
 - Technical approach to multi-tenancy: shared database with a company id on every row, or a separate database per company.
