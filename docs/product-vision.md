@@ -48,6 +48,30 @@ The home-screen name of an app is fixed at build time, so one shared store app c
 
 Inside every version, the company's logo, colours, modules and features load after login.
 
+## Email hosting (Microsoft 365)
+
+Companies get professional mailboxes on their own domain (e.g. `sales@company.co.zw`) through **Microsoft 365**, resold by ZimboBuz. We do not run our own mail servers.
+
+### How we resell it
+- Join the **Microsoft AI Cloud Partner Program** and sell through the **Cloud Solution Provider (CSP)** programme, starting as an **indirect reseller** through an authorised Microsoft distributor (direct billing needs a much larger business).
+- Each customer company gets **its own Microsoft 365 tenant**; ZimboBuz manages it through a **GDAP** (granular delegated admin) relationship the customer approves.
+- Plans offered (check current names and prices with the distributor): **Exchange Online** (email only, cheapest), **Microsoft 365 Business Basic** (email, Teams, OneDrive, web Office), **Business Standard** (adds desktop Office apps), **Business Premium** (adds advanced security and device management).
+
+### ZimboBuz integration
+- **One-click domain setup:** because ZimboBuz manages the company's domain, it adds Microsoft's verification, MX, autodiscover, SPF, DKIM and DMARC records automatically.
+- **Mailboxes driven by HR:** adding an employee in the ERP creates their Microsoft 365 user and assigns a licence; marking them as left blocks sign-in, converts the mailbox to shared, forwards it to their manager and frees the licence (via Microsoft Graph).
+- **Sign in with Microsoft:** staff log in to the ERP with their Microsoft 365 account (Entra ID single sign-on), so one password covers email and ERP.
+- **ERP emails from the company's own mailbox:** invoices, quotes, statements and reminders are sent from e.g. `accounts@company.co.zw` through Microsoft Graph, so replies land in their Outlook. A transactional service (e.g. Resend, already used in Bravura) remains the fallback for high-volume or no-reply mail.
+- **CRM email sync:** emails with a customer appear on that customer's record; Outlook calendar events sync with CRM activities and HR leave.
+- **Documents and Teams (later):** attach OneDrive/SharePoint files to ERP records; post approvals and alerts to a Teams channel.
+- **Website forms** deliver to the right mailbox and create a CRM lead.
+
+### Pricing idea (not decided)
+- Microsoft licence cost plus a ZimboBuz margin, billed monthly with the ERP subscription (one invoice, payable by EcoCash or card)
+- Bundles such as "Website + store + 5 mailboxes"
+- Once-off migration fee for moving mail from an existing host (cPanel, Gmail, other)
+- Licences are billed in USD by Microsoft; ZiG pricing follows the company's exchange-rate policy
+
 ## Module catalogue
 
 Modules come from the consolidated list in [erp-feature-research.md](erp-feature-research.md). Each module has its own feature toggles.
@@ -150,7 +174,7 @@ ZimboBuz is **proprietary, closed-source software**. Customers rent access (SaaS
 Development is done by AI (Claude), in small testable steps, each with automated tests, reviewed and tried by the owner before moving on. Decisions are recorded in this folder so later sessions keep context.
 
 What the owner handles:
-- Accounts and credentials: Paynow merchant, ZIMRA fiscalisation registration and software approval, WhatsApp Business API, domains, hosting (Supabase and Vercel are connected)
+- Accounts and credentials: Microsoft partner/CSP enrolment with a distributor, Paynow merchant, ZIMRA fiscalisation registration and software approval, WhatsApp Business API, domains, hosting (Supabase and Vercel are connected)
 - Testing with real businesses
 - Sales, onboarding and support
 - Product decisions: priorities, pricing, when something is ready to ship
@@ -162,6 +186,7 @@ What the owner handles:
 - Mobile apps are for staff (ERP) only, not for customers.
 - PWA for everyone; branded APK/iOS builds on a premium plan.
 - Websites and stores are as modern as possible, with motion throughout (per-template motion styles, company-controlled intensity, fast on low-end phones).
+- Email hosting is Microsoft 365, resold through the CSP programme, with each company in its own tenant.
 - ZimboBuz is proprietary and closed source; no GPL/AGPL code is copied in.
 - Build on the Bromadex and Bravura codebases, converted to multi-tenant, rather than starting from scratch.
 
