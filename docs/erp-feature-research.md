@@ -116,10 +116,12 @@ Competitor and market research for ZimboBuz. Features below are what each vendor
 
 ## Proposed additions for ZimboBuz
 
+> Decisions: exchange rates are set by each company (no automatic RBZ feed). The interface is English only; Shona/Ndebele localisation is out of scope.
+
 Features beyond the consolidated list, aimed at the gaps above and at how Zimbabwean businesses actually trade. Prioritised as **P1** (differentiator, build early), **P2** (strong value), **P3** (later).
 
 ### Money and currency
-- **P1 – ZiG-first, USD-equal multi-currency.** Every price, invoice and report in ZiG and USD, with automatic daily exchange rates (official RBZ rate plus a configurable business rate) and realised/unrealised FX gain/loss posting.
+- **P1 – ZiG-first, USD-equal multi-currency.** Every price, invoice and report in ZiG and USD. **Each company sets its own exchange rates** (effective-dated, with history), and realised/unrealised FX gain/loss is posted automatically.
 - **P1 – Split tender.** One sale paid partly in USD cash, partly in ZiG via EcoCash, partly by swipe, with correct change and per-currency till balances.
 - **P1 – Change-shortage handling.** Issue small change as store credit, a voucher or a mobile-money refund, and track it as a liability.
 - **P2 – Per-currency price lists and rounding rules** (e.g. round ZiG prices to the nearest note, USD to $0.05).
@@ -143,7 +145,6 @@ Features beyond the consolidated list, aimed at the gaps above and at how Zimbab
 - **P1 – Low-data mode** for expensive mobile data: compressed sync and text-only views.
 - **P2 – Runs on cheap Android phones and tablets**, with Bluetooth thermal printers and phone-camera barcode scanning.
 - **P2 – USSD and SMS fallback** for owners to check daily sales, stock or balances without data.
-- **P3 – Shona and Ndebele interface.**
 
 ### WhatsApp-first commerce
 - **P1 – Send invoices, receipts, quotes and statements by WhatsApp** in one tap.
