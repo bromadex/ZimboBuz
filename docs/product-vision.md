@@ -501,6 +501,75 @@ Two of the owner's existing projects already cover much of ZimERP for a single c
 8. **Mining and Construction bundle:** SHEQ, fleet, fuel, contractors, campsite, meals, batch plant. An industry no competitor targets directly.
 9. **Engineering standards:** no hard deletes (archive only), audit trail on every record, permission checks enforced in the database, screen codes and a command palette.
 
+## Security
+
+### 1. Company data isolation (most important rule)
+- Every row carries a company id and **database row-level security** blocks access to other companies' data, independent of app code.
+- **Automated isolation tests on every change** (e.g. "company A cannot read company B's invoices" must fail); a change that breaks isolation cannot be deployed.
+- Files stored per company with private, expiring links.
+- Enterprise option: dedicated database.
+
+### 2. Logins and access
+- Two-step verification: required for owners and admins, optional for staff.
+- Sign in with Microsoft 365 (Entra ID) for companies on ZimERP email.
+- Cashier PINs for fast POS switching on a manager-authorised device.
+- Device list with remote logout; automatic logout after inactivity; alerts for logins from new devices.
+
+### 3. Permissions and fraud controls (built on Bravura's model)
+- Roles and permissions per module and feature (e.g. a cashier can sell but not refund).
+- Approval limits (e.g. purchases above a set amount need a manager).
+- Segregation of duties (whoever creates a supplier cannot also pay them).
+- Voids, discounts, refunds and till variances logged per cashier, with alerts for unusual patterns.
+- Tamper-proof audit trail on every record (who, what, when, before/after); no hard deletes, archive only.
+
+### 4. Data protection
+- Encryption in transit (HTTPS everywhere) and at rest (database, files, backups).
+- Secrets in a secure store (Supabase/Vercel settings now, Azure Key Vault later), never in code.
+- Each company's Paynow and Microsoft credentials encrypted, used server-side only, never displayed after saving.
+- No card data stored; card entry is handled by Paynow.
+- Payment notifications verified with Paynow's hash so "paid" cannot be faked.
+- Collect only needed personal data; mask sensitive fields (ID numbers, salaries) from users without permission.
+
+### 5. Offline devices
+- Local offline data encrypted and limited to what the user needs.
+- Remote wipe of ZimERP data on lost or stolen devices.
+- Offline transactions re-validated by the server on sync, so a tampered device cannot create fake stock or payments.
+
+### 6. AI assistant
+- Read-only, permission-checked tools only, running as the logged-in user (Ask Bravura design).
+- Content from customer data, emails or websites is treated as data, never as instructions (prompt-injection defence); actions such as approvals always require user confirmation.
+- Every question and answer logged.
+
+### 7. Websites, stores and email
+- DDoS and web-attack protection (Vercel now, Azure Front Door/WAF later), rate limits on logins and forms, bot protection on forms.
+- SPF, DKIM and DMARC set automatically so nobody can spoof invoices from a customer's domain.
+- Microsoft 365 security defaults enabled for every company.
+
+### 8. Secure development
+- Every release: security review, dependency vulnerability scanning, secret scanning, automated tests.
+- Follow OWASP Top 10 practices (input validation, injection and cross-site protections).
+- Independent penetration test before launch and yearly after.
+- Staging environment; nothing reaches customers untested.
+
+### 9. ZimERP staff access to customer data
+- No silent access: support can enter a company's ZimERP only with the customer's permission, for a limited time, with every action logged and visible to the customer.
+- Two-step verification on all ZimERP company accounts (GitHub, Supabase, Vercel, Azure, Microsoft, Paynow, registrar).
+- Least-privilege access for staff, removed immediately when they leave.
+
+### 10. Backups and incidents
+- Daily encrypted backups with point-in-time restore, stored in a second location; monthly restore test.
+- Written incident response plan: detect, contain, fix, inform affected customers, and notify POTRAZ where the Cyber and Data Protection Act requires it.
+- Status page and customer notices (see Customer support).
+
+### 11. Compliance
+- Cyber and Data Protection Act: privacy policy, data processing agreements, register of where data is stored and which processors are used (Microsoft, Paynow, hosting), data export and deletion on request.
+- Later: work towards ISO 27001 for bank, mining and government customers.
+
+### Immediate actions
+1. Make all ZimERP-related repositories private.
+2. Rotate any API key that has ever been committed to a repository, and make sure `.env` files are git-ignored everywhere.
+3. Turn on two-step verification for GitHub, Supabase, Vercel and email accounts.
+
 ## Ownership and licensing
 
 ZimERP is **proprietary, closed-source software**. Customers rent access (SaaS); they never receive the source code.
