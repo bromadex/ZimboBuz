@@ -75,11 +75,42 @@ Companies get professional mailboxes on their own domain (e.g. `sales@company.co
 ## Hosting and domains
 
 ### Platform hosting
-- **Vercel** serves every company's website, store and ERP from one deployment, recognising the company by domain (`company.co.zw`, `erp.company.co.zw`). Custom domains are attached through Vercel's API with automatic free SSL.
-- **Supabase** provides the database, logins, file storage and server functions. Start with one shared database where every row carries a company id and row-level security keeps companies apart; move very large customers to their own database later if needed.
-- Choose the nearest available region (South Africa if offered, otherwise Europe) and test speed from Zimbabwe before launch.
-- Rough starting cost: about $50–100/month (Vercel Pro + Supabase Pro), growing with usage. Check current prices.
-- No plain cPanel web hosting at launch; customer websites are hosted as part of ZimboBuz.
+
+**Decision:** build and test on **Vercel + Supabase**; move to **Microsoft Azure (South Africa North, Johannesburg)** when ZimboBuz is ready to sell.
+
+#### Phase 1: building (Vercel + Supabase)
+- Vercel serves websites, stores and ERP screens; Supabase provides the database, logins, file storage and server functions. Both are already connected and used by Bravura and Bromadex.
+- Cheap and fast to iterate: roughly $50–100/month.
+- Used for development, demos and pilot customers.
+
+#### Phase 2: commercial launch (Azure, Johannesburg)
+- **Why Azure:** same Microsoft partnership (CSP) as Microsoft 365 email, margin on resold Azure usage, data centre in South Africa close to Zimbabwe, staff sign in with Microsoft 365 (Entra ID), trusted by enterprise customers, possible startup credits (check Microsoft for Startups terms).
+- **Target setup:**
+
+| Need | Azure service |
+|---|---|
+| Websites, stores, ERP screens | Azure Static Web Apps / App Service / Container Apps behind Azure Front Door (custom domains, automatic SSL, CDN) |
+| Server code | Azure Functions or Container Apps |
+| Database, logins, storage | Self-hosted Supabase on Azure, or Azure Database for PostgreSQL + Entra ID + Blob Storage |
+| DNS | Azure DNS |
+| Backups and monitoring | Azure Backup, Azure Monitor |
+
+- All companies share one platform; only **Enterprise** customers get a dedicated Azure setup (own database and app), priced at a premium.
+
+#### Building for the move (rules from day one)
+So the switch from Vercel + Supabase to Azure is a migration, not a rewrite:
+- **Standard PostgreSQL only:** all schema, security rules (RLS) and business logic in SQL migration files kept in the repository, so they run unchanged on self-hosted Supabase or Azure PostgreSQL.
+- **No Vercel-only features** (Vercel KV, Edge Config, Vercel-specific image or cron services) unless wrapped behind our own small adapter.
+- **Wrap provider services behind adapters:** file storage, email sending, auth/sign-in, background jobs and DNS each go through one ZimboBuz module, so only that module changes when moving to Azure.
+- **Configuration through environment variables**, never hard-coded URLs or keys.
+- **Container-ready:** the app and server functions can be packaged as Docker containers.
+- **Rehearse the move:** before launch, restore a copy of the database and files on Azure, run the full test suite there and measure speed from Harare and Bulawayo.
+
+#### Phase 3: local hosting (Enterprise, on request)
+For customers requiring data in Zimbabwe: a private install in a Zimbabwean data centre, or on the customer's own servers with a licence key.
+
+#### Not offered
+No plain cPanel web hosting at launch; customer websites are hosted as part of ZimboBuz.
 
 ### Domain sales (feeds website, ERP and Microsoft 365 setup)
 ZimboBuz sells domains, and the domain becomes the backbone of each company's setup.
@@ -221,7 +252,7 @@ ZimboBuz is **proprietary, closed-source software**. Customers rent access (SaaS
 Development is done by AI (Claude), in small testable steps, each with automated tests, reviewed and tried by the owner before moving on. Decisions are recorded in this folder so later sessions keep context.
 
 What the owner handles:
-- Accounts and credentials: domain registrar accounts (name.co.zw for `.co.zw`, and an international registrar), Microsoft partner/CSP enrolment with a distributor, Paynow merchant, ZIMRA fiscalisation registration and software approval, WhatsApp Business API, domains, hosting (Supabase and Vercel are connected)
+- Accounts and credentials: Azure subscription (through the Microsoft partner/CSP relationship) before launch, domain registrar accounts (name.co.zw for `.co.zw`, and an international registrar), Microsoft partner/CSP enrolment with a distributor, Paynow merchant, ZIMRA fiscalisation registration and software approval, WhatsApp Business API, domains, hosting (Supabase and Vercel are connected)
 - Testing with real businesses
 - Sales, onboarding and support
 - Product decisions: priorities, pricing, when something is ready to ship
@@ -235,7 +266,7 @@ What the owner handles:
 - Websites and stores are as modern as possible, with motion throughout (per-template motion styles, company-controlled intensity, fast on low-end phones).
 - `.co.zw` domains are registered through name.co.zw, with nameservers pointed to ZimboBuz DNS.
 - ZimboBuz sells domains; the domain drives one-click setup of the website, store, ERP and Microsoft 365.
-- Platform hosting on Vercel + Supabase; no plain cPanel hosting at launch.
+- Build on Vercel + Supabase; move to Azure (Johannesburg) for commercial launch; code stays portable (standard PostgreSQL, adapters for provider services). No plain cPanel hosting.
 - Email hosting is Microsoft 365, resold through the CSP programme, with each company in its own tenant.
 - ZimboBuz is proprietary and closed source; no GPL/AGPL code is copied in.
 - Build on the Bromadex and Bravura codebases, converted to multi-tenant, rather than starting from scratch.
