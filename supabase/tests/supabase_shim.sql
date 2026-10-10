@@ -1,9 +1,9 @@
 -- Minimal stand-in for the parts of Supabase the migrations rely on, so they
 -- can be tested on plain PostgreSQL. Never applied to a real Supabase project.
 
-do $$ begin create role anon nologin; exception when duplicate_object then null; end $$;
-do $$ begin create role authenticated nologin; exception when duplicate_object then null; end $$;
-do $$ begin create role service_role nologin bypassrls; exception when duplicate_object then null; end $$;
+do $$ begin create role anon nologin; exception when duplicate_object or unique_violation then null; end $$;
+do $$ begin create role authenticated nologin; exception when duplicate_object or unique_violation then null; end $$;
+do $$ begin create role service_role nologin bypassrls; exception when duplicate_object or unique_violation then null; end $$;
 
 create schema if not exists auth;
 
