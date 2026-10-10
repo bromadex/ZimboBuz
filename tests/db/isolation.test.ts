@@ -65,7 +65,7 @@ beforeAll(async () => {
        values ($1, 'customer', $2, 'call', 'Call back', current_date, $3, $3)`,
       [c, rec, u],
     );
-    await seedBusiness(c, hq, u);
+    await seedBusiness(c, hq);
   }
   const { rows } = await db.admin.query<{ table_name: string }>(
     `select table_name from information_schema.columns
@@ -75,7 +75,7 @@ beforeAll(async () => {
 });
 
 /** One small flow per company so every business table has rows to protect. */
-async function seedBusiness(c: string, hq: string, u: string) {
+async function seedBusiness(c: string, hq: string) {
   const q = async (sql: string, params: unknown[]) => (await db.admin.query(sql, params)).rows[0];
   const loc = (await q("select id from public.stock_locations where branch_id = $1", [hq])).id;
   await q("insert into public.exchange_rates (company_id, currency, rate) values ($1, 'ZWG', 26)", [c]);
@@ -101,7 +101,6 @@ async function seedBusiness(c: string, hq: string, u: string) {
   await q("insert into public.payment_allocations (company_id, payment_id, invoice_id, amount_cents) values ($1, $2, $3, 500)", [c, pay, inv]);
   await q("update public.payments set docstatus = 1 where id = $1", [pay]);
   await q("insert into public.leads (company_id, customer_id, source, name) values ($1, $2, 'manual', 'Lead')", [c, cust]);
-  void u;
 }
 
 afterAll(async () => {

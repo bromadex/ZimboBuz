@@ -10,7 +10,6 @@ let owner: string;
 let cashier: string;
 let storekeeper: string;
 let company: string;
-let otherCompany: string;
 let hq: string;
 
 beforeAll(async () => {
@@ -19,7 +18,6 @@ beforeAll(async () => {
   cashier = await db.createUser();
   storekeeper = await db.createUser();
   company = await createCompanyAs(db, owner, { plan: "pro", modules: ["pos", "sales", "inventory"] });
-  otherCompany = await createCompanyAs(db, await db.createUser(), { plan: "pro", modules: ["sales"] });
   await addMember(db, company, cashier, "cashier");
   await addMember(db, company, storekeeper, "storekeeper");
   hq = (await db.admin.query("select id from public.branches where company_id = $1 and code = 'HQ'", [company]))
