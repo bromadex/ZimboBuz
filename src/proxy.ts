@@ -1,5 +1,7 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { allowsArea, cachedLookup, classifyHost, devLookup, supabaseLookup, type SiteLookup } from "@/lib/tenancy/host";
+import { sessionSecret } from "@/server/session";
 
 // Routes each request to the right company by hostname (issue #23).
 // Company websites and stores are served from /s/<slug>/..., company ERPs from
@@ -13,11 +15,25 @@ const lookup: SiteLookup = cachedLookup(
     : devLookup(platformDomain),
 );
 
-// Some servers (e.g. the standalone build) pass rewritten requests through the
-// proxy again. Rewrites carry this per-process token so they are let through;
-// requests from outside can never present it.
-const ROUTE_TOKEN = crypto.randomUUID();
+// Some requests come back through the proxy from the server itself: the
+// standalone build re-enters rewritten requests, and a form action that
+// redirects renders the target page by calling the server at its own address
+// (e.g. localhost), carrying the original request's headers. Rewrites carry
+// this token, derived from the server secret so every instance agrees, which
+// lets those requests through (or back to the same company); requests from
+// outside can never present it.
+let cachedToken: string | undefined;
+function routeToken(): string {
+  cachedToken ??= createHmac("sha256", sessionSecret()).update("zimerp-route-token").digest("hex");
+  return cachedToken;
+}
+function hasRouteToken(request: NextRequest): boolean {
+  const given = Buffer.from(request.headers.get("x-zimerp-route") ?? "");
+  const expected = Buffer.from(routeToken());
+  return given.length === expected.length && timingSafeEqual(given, expected);
+}
 const ROUTING_HEADERS = ["x-zimerp-route", "x-zimerp-company", "x-zimerp-area"];
+const SLUG = /^[a-z0-9]([a-z0-9-]{0,40}[a-z0-9])?$/;
 
 const notFound = () =>
   new NextResponse("This site is not on ZimERP.", { status: 404, headers: { "content-type": "text/plain; charset=utf-8" } });
@@ -25,7 +41,16 @@ const notFound = () =>
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const internal = pathname === "/s" || pathname === "/e" || pathname.startsWith("/s/") || pathname.startsWith("/e/");
-  if (internal && request.headers.get("x-zimerp-route") === ROUTE_TOKEN) return NextResponse.next();
+  if (hasRouteToken(request)) {
+    if (internal) return NextResponse.next();
+    const company = request.headers.get("x-zimerp-company") ?? "";
+    const area = request.headers.get("x-zimerp-area");
+    if (SLUG.test(company) && (area === "erp" || area === "site")) {
+      const url = request.nextUrl.clone();
+      url.pathname = `${area === "erp" ? "/e" : "/s"}/${company}${pathname === "/" ? "" : pathname}`;
+      return NextResponse.rewrite(url);
+    }
+  }
 
   const headers = new Headers(request.headers);
   for (const name of ROUTING_HEADERS) headers.delete(name);
@@ -43,7 +68,7 @@ export async function proxy(request: NextRequest) {
   url.pathname = `${prefix}/${site.companySlug}${pathname === "/" ? "" : pathname}`;
   url.search = search;
 
-  headers.set("x-zimerp-route", ROUTE_TOKEN);
+  headers.set("x-zimerp-route", routeToken());
   headers.set("x-zimerp-company", site.companySlug);
   headers.set("x-zimerp-area", target.area);
   return NextResponse.rewrite(url, { request: { headers } });

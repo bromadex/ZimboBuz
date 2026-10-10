@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-24 text-center">
@@ -9,6 +11,12 @@ export default function Home() {
         Run your whole business in one place: ZiG and USD, EcoCash, ZIMRA, website and email.
         Built for Zimbabwe.
       </p>
+      <Link
+        href="/signup"
+        className="mt-4 rounded-lg bg-emerald-700 px-6 py-3 font-semibold text-white hover:bg-emerald-800"
+      >
+        Start your business
+      </Link>
     </main>
   );
 }
