@@ -37,10 +37,12 @@ insert into public.event_types (code, description) values
   ('subscription.overdue',  'A company''s ZimERP subscription is overdue');
 
 insert into public.event_subscribers (subscriber, event_type) values
-  ('ledger',        'sale.submitted'),
-  ('ledger',        'payment.received'),
-  ('ledger',        'document.submitted'),
-  ('ledger',        'document.cancelled'),
+  -- Ledger postings happen synchronously inside the business transaction
+  -- (app.post_entry), so the ledger is not an event subscriber.
+  ('webhooks',      'sale.submitted'),
+  ('webhooks',      'payment.received'),
+  ('webhooks',      'document.submitted'),
+  ('webhooks',      'document.cancelled'),
   ('notifications', 'lead.created'),
   ('notifications', 'payment.received'),
   ('notifications', 'stock.low'),

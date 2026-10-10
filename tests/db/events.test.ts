@@ -54,7 +54,7 @@ describe("emitting", () => {
       "select subscriber from public.event_deliveries where event_id = $1 order by subscriber",
       [id],
     );
-    expect(rows.map((r) => r.subscriber)).toEqual(["ledger", "whatsapp"]);
+    expect(rows.map((r) => r.subscriber)).toEqual(["webhooks", "whatsapp"]);
   });
 
   it("refuses unknown event types", async () => {
@@ -91,7 +91,7 @@ describe("delivering", () => {
 
   it("marks completed deliveries delivered", async () => {
     await emit("payment.received", "pay-1");
-    const [d] = (await claim("ledger")).filter((x) => x.event_type === "payment.received");
+    const [d] = (await claim("webhooks")).filter((x) => x.event_type === "payment.received");
     await db.asService((q) => q("select app.complete_delivery($1)", [d.delivery_id]));
     const row = await delivery(d.delivery_id);
     expect(row.status).toBe("delivered");
@@ -136,7 +136,7 @@ describe("delivering", () => {
   });
 
   it("cannot be driven by signed-in users", async () => {
-    await expect(db.asUser(owner, (q) => q("select * from app.claim_deliveries('ledger')"))).rejects.toThrow(
+    await expect(db.asUser(owner, (q) => q("select * from app.claim_deliveries('webhooks')"))).rejects.toThrow(
       /permission denied/,
     );
   });

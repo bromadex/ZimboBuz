@@ -17,6 +17,8 @@ const CATALOGUE = new Set([
   "doctypes",
   "doctype_links",
   "restricted_fields",
+  "tax_rates",
+  "account_templates",
 ]);
 
 let db: Db;
@@ -63,6 +65,7 @@ beforeAll(async () => {
        values ($1, 'customer', $2, 'call', 'Call back', current_date, $3, $3)`,
       [c, rec, u],
     );
+    await seedBusiness(c, hq, u);
   }
   const { rows } = await db.admin.query<{ table_name: string }>(
     `select table_name from information_schema.columns
@@ -70,6 +73,36 @@ beforeAll(async () => {
   );
   companyTables = rows.map((r) => r.table_name);
 });
+
+/** One small flow per company so every business table has rows to protect. */
+async function seedBusiness(c: string, hq: string, u: string) {
+  const q = async (sql: string, params: unknown[]) => (await db.admin.query(sql, params)).rows[0];
+  const loc = (await q("select id from public.stock_locations where branch_id = $1", [hq])).id;
+  await q("insert into public.exchange_rates (company_id, currency, rate) values ($1, 'ZWG', 26)", [c]);
+  await q("insert into public.suppliers (company_id, name) values ($1, 'Supplier')", [c]);
+  const cust = (await q("insert into public.customers (company_id, name) values ($1, 'Customer') returning id", [c])).id;
+  const prod = (await q("insert into public.products (company_id, sku, name) values ($1, 'SKU1', 'Item') returning id", [c])).id;
+  await q("insert into public.product_prices (company_id, product_id, currency, price_cents) values ($1, $2, 'USD', 500)", [c, prod]);
+  const mov = (
+    await q(
+      "insert into public.stock_movements (company_id, branch_id, movement_type, product_id, to_location_id, quantity, unit_cost) values ($1, $2, 'receipt', $3, $4, 10, 100) returning id",
+      [c, hq, prod, loc],
+    )
+  ).id;
+  await q("update public.stock_movements set docstatus = 1 where id = $1", [mov]);
+  const take = (await q("insert into public.stock_takes (company_id, branch_id, location_id) values ($1, $2, $3) returning id", [c, hq, loc])).id;
+  await q("insert into public.stock_take_lines (company_id, stock_take_id, product_id, counted_qty) values ($1, $2, $3, 10)", [c, take, prod]);
+  const quote = (await q("insert into public.quotes (company_id, branch_id, customer_id, currency) values ($1, $2, $3, 'USD') returning id", [c, hq, cust])).id;
+  await q("insert into public.quote_lines (company_id, quote_id, product_id, quantity, unit_price_cents) values ($1, $2, $3, 1, 500)", [c, quote, prod]);
+  const inv = (await q("insert into public.sales_invoices (company_id, branch_id, customer_id, currency) values ($1, $2, $3, 'USD') returning id", [c, hq, cust])).id;
+  await q("insert into public.sales_invoice_lines (company_id, invoice_id, product_id, quantity, unit_price_cents) values ($1, $2, $3, 1, 500)", [c, inv, prod]);
+  await q("update public.sales_invoices set docstatus = 1 where id = $1", [inv]);
+  const pay = (await q("insert into public.payments (company_id, branch_id, customer_id, currency, amount_cents, method) values ($1, $2, $3, 'USD', 500, 'cash') returning id", [c, hq, cust])).id;
+  await q("insert into public.payment_allocations (company_id, payment_id, invoice_id, amount_cents) values ($1, $2, $3, 500)", [c, pay, inv]);
+  await q("update public.payments set docstatus = 1 where id = $1", [pay]);
+  await q("insert into public.leads (company_id, customer_id, source, name) values ($1, $2, 'manual', 'Lead')", [c, cust]);
+  void u;
+}
 
 afterAll(async () => {
   await db?.close();

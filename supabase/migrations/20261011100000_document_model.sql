@@ -64,10 +64,7 @@ create table public.restricted_fields (
 );
 
 insert into public.restricted_fields (doctype, column_name, permission_code) values
-  ('product',  'cost_price',      'core.products.view_cost'),
-  ('product',  'margin',          'core.products.view_cost'),
-  ('product',  'supplier_price',  'core.products.view_cost'),
-  ('customer', 'credit_limit',    'sales.credit.manage');
+  ('product',  'avg_cost',        'core.products.view_cost');
 
 -- True when the signed-in user may see field p_column of p_doctype.
 create function app.can_see_field(p_company uuid, p_doctype text, p_column text)
@@ -339,6 +336,13 @@ begin
   if new.docstatus = 1 then
     new.submitted_at := now();
     new.submitted_by := auth.uid();
+    -- Numbered documents get their number on submission, unless an offline
+    -- device already numbered them from its reserved block.
+    if to_jsonb(new) ? 'number' and to_jsonb(new)->>'number' is null
+       and exists (select 1 from public.doctypes d where d.code = v_doctype and d.prefix is not null) then
+      new := jsonb_populate_record(new, jsonb_build_object('number',
+               app.next_document_number(new.company_id, v_doctype, (to_jsonb(new)->>'branch_id')::uuid)));
+    end if;
     perform app.log_system_message(new.company_id, v_doctype, new.id, 'Submitted');
     perform app.emit_event(new.company_id, 'document.submitted', v_doctype, new.id::text, '{}'::jsonb);
   end if;

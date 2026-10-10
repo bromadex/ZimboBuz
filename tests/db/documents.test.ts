@@ -27,7 +27,7 @@ beforeAll(async () => {
 
   // A stand-in submittable document table, set up the way real migrations will.
   await db.admin.query(`
-    create table public.quotes (
+    create table public.test_documents (
       id           uuid primary key default gen_random_uuid(),
       company_id   uuid not null references public.companies(id),
       customer_id  uuid,
@@ -35,13 +35,13 @@ beforeAll(async () => {
       amount_cents bigint not null default 0,
       updated_at   timestamptz not null default now()
     );
-    select app.enable_document_lifecycle('public.quotes', 'quote');
-    alter table public.quotes enable row level security;
-    create policy r on public.quotes for select to authenticated using (app.can(company_id, 'sales.view'));
-    create policy w on public.quotes for insert to authenticated with check (app.can(company_id, 'sales.quote.create'));
-    create policy u on public.quotes for update to authenticated
+    select app.enable_document_lifecycle('public.test_documents', 'quote');
+    alter table public.test_documents enable row level security;
+    create policy r on public.test_documents for select to authenticated using (app.can(company_id, 'sales.view'));
+    create policy w on public.test_documents for insert to authenticated with check (app.can(company_id, 'sales.quote.create'));
+    create policy u on public.test_documents for update to authenticated
       using (app.can(company_id, 'sales.quote.create')) with check (app.can(company_id, 'sales.quote.create'));
-    grant select, insert, update on public.quotes to authenticated;
+    grant select, insert, update on public.test_documents to authenticated;
   `);
 });
 
@@ -125,24 +125,24 @@ describe("document lifecycle", () => {
 
   it("allows editing drafts freely", async () => {
     await asOwner(async (q) => {
-      const { rows } = await q("insert into public.quotes (company_id, title) values ($1, 'Draft') returning id", [company]);
-      const r = await q("update public.quotes set title = 'Edited', amount_cents = 500 where id = $1", [rows[0].id]);
+      const { rows } = await q("insert into public.test_documents (company_id, title) values ($1, 'Draft') returning id", [company]);
+      const r = await q("update public.test_documents set title = 'Edited', amount_cents = 500 where id = $1", [rows[0].id]);
       expect(r.rowCount).toBe(1);
     });
   });
 
   it("refuses creating documents that are already submitted", async () => {
     await expect(
-      asOwner((q) => q("insert into public.quotes (company_id, title, docstatus) values ($1, 'X', 1)", [company])),
+      asOwner((q) => q("insert into public.test_documents (company_id, title, docstatus) values ($1, 'X', 1)", [company])),
     ).rejects.toThrow(/created as drafts/);
   });
 
   it("locks submitted documents, records the timeline and emits events", async () => {
     await asOwner(async (q) => {
-      const id = (await q("insert into public.quotes (company_id, title) values ($1, 'Q') returning id", [company])).rows[0].id;
-      await q("update public.quotes set docstatus = 1 where id = $1", [id]);
+      const id = (await q("insert into public.test_documents (company_id, title) values ($1, 'Q') returning id", [company])).rows[0].id;
+      await q("update public.test_documents set docstatus = 1 where id = $1", [id]);
 
-      const doc = (await q("select submitted_at, submitted_by from public.quotes where id = $1", [id])).rows[0];
+      const doc = (await q("select submitted_at, submitted_by from public.test_documents where id = $1", [id])).rows[0];
       expect(doc.submitted_by).toBe(owner);
       expect(doc.submitted_at).not.toBeNull();
 
@@ -157,46 +157,46 @@ describe("document lifecycle", () => {
           [id.toString()],
         )
       ).rows;
-      expect(events).toEqual([{ event_type: "document.submitted", subs: ["ledger"] }]);
+      expect(events).toEqual([{ event_type: "document.submitted", subs: ["webhooks"] }]);
 
-      await expect(q("update public.quotes set amount_cents = 1 where id = $1", [id])).rejects.toThrow(/locked/);
+      await expect(q("update public.test_documents set amount_cents = 1 where id = $1", [id])).rejects.toThrow(/locked/);
     });
   });
 
   it("requires a reason to cancel, then freezes the document", async () => {
     await asOwner(async (q) => {
-      const id = (await q("insert into public.quotes (company_id, title) values ($1, 'Q') returning id", [company])).rows[0].id;
-      await q("update public.quotes set docstatus = 1 where id = $1", [id]);
+      const id = (await q("insert into public.test_documents (company_id, title) values ($1, 'Q') returning id", [company])).rows[0].id;
+      await q("update public.test_documents set docstatus = 1 where id = $1", [id]);
       await q("savepoint s");
-      await expect(q("update public.quotes set docstatus = 2 where id = $1", [id])).rejects.toThrow(/reason is required/);
+      await expect(q("update public.test_documents set docstatus = 2 where id = $1", [id])).rejects.toThrow(/reason is required/);
       await q("rollback to savepoint s");
-      await q("update public.quotes set docstatus = 2, cancel_reason = 'Customer changed order' where id = $1", [id]);
-      const doc = (await q("select cancelled_by from public.quotes where id = $1", [id])).rows[0];
+      await q("update public.test_documents set docstatus = 2, cancel_reason = 'Customer changed order' where id = $1", [id]);
+      const doc = (await q("select cancelled_by from public.test_documents where id = $1", [id])).rows[0];
       expect(doc.cancelled_by).toBe(owner);
-      await expect(q("update public.quotes set docstatus = 1 where id = $1", [id])).rejects.toThrow(/cannot be changed/);
+      await expect(q("update public.test_documents set docstatus = 1 where id = $1", [id])).rejects.toThrow(/cannot be changed/);
     });
   });
 
   it("refuses submitted-to-draft and draft-to-cancelled shortcuts", async () => {
     await asOwner(async (q) => {
-      const id = (await q("insert into public.quotes (company_id, title) values ($1, 'Q') returning id", [company])).rows[0].id;
+      const id = (await q("insert into public.test_documents (company_id, title) values ($1, 'Q') returning id", [company])).rows[0].id;
       await q("savepoint s");
-      await expect(q("update public.quotes set docstatus = 2, cancel_reason = 'x' where id = $1", [id])).rejects.toThrow(
+      await expect(q("update public.test_documents set docstatus = 2, cancel_reason = 'x' where id = $1", [id])).rejects.toThrow(
         /archive them instead/,
       );
       await q("rollback to savepoint s");
-      await q("update public.quotes set docstatus = 1 where id = $1", [id]);
-      await expect(q("update public.quotes set docstatus = 0 where id = $1", [id])).rejects.toThrow(/locked/);
+      await q("update public.test_documents set docstatus = 1 where id = $1", [id]);
+      await expect(q("update public.test_documents set docstatus = 0 where id = $1", [id])).rejects.toThrow(/locked/);
     });
   });
 
   it("supports amending: a new draft linked to the cancelled original", async () => {
     await asOwner(async (q) => {
-      const id = (await q("insert into public.quotes (company_id, title) values ($1, 'Q') returning id", [company])).rows[0].id;
-      await q("update public.quotes set docstatus = 1 where id = $1", [id]);
-      await q("update public.quotes set docstatus = 2, cancel_reason = 'Wrong price' where id = $1", [id]);
+      const id = (await q("insert into public.test_documents (company_id, title) values ($1, 'Q') returning id", [company])).rows[0].id;
+      await q("update public.test_documents set docstatus = 1 where id = $1", [id]);
+      await q("update public.test_documents set docstatus = 2, cancel_reason = 'Wrong price' where id = $1", [id]);
       const amended = await q(
-        "insert into public.quotes (company_id, title, amended_from) values ($1, 'Q (amended)', $2) returning docstatus",
+        "insert into public.test_documents (company_id, title, amended_from) values ($1, 'Q (amended)', $2) returning docstatus",
         [company, id],
       );
       expect(amended.rows[0].docstatus).toBe(0);
@@ -282,15 +282,27 @@ describe("activity panel", () => {
 
 describe("connections", () => {
   it("counts linked records the user may see, skipping tables not built yet", async () => {
-    const customer = randomUUID();
-    await db.admin.query(
-      `insert into public.quotes (company_id, customer_id, title) values ($1, $3, 'A'), ($1, $3, 'B'), ($2, $3, 'Other company')`,
-      [company, otherCompany, customer],
-    );
+    const customer = (
+      await db.admin.query("insert into public.customers (company_id, name) values ($1, 'Tendai') returning id", [company])
+    ).rows[0].id;
+    for (let i = 0; i < 2; i++) {
+      await db.admin.query(
+        "insert into public.quotes (company_id, branch_id, customer_id, currency) values ($1, $2, $3, 'USD')",
+        [company, hq, customer],
+      );
+    }
     const links = await db.asUser(owner, async (q) =>
       (await q("select doctype, label, record_count::int as n from public.record_connections($1, 'customer', $2)", [company, customer])).rows,
     );
-    expect(links).toEqual([{ doctype: "quote", label: "Quotes", n: 2 }]);
+    expect(links).toContainEqual({ doctype: "quote", label: "Quotes", n: 2 });
+    expect(links).toContainEqual({ doctype: "sales_invoice", label: "Invoices", n: 0 });
+    // customers -> pos_sales is registered, but that table is not built yet
+    expect(links.find((l) => l.doctype === "pos_sale")).toBeUndefined();
+
+    const strangerView = await db.asUser(await db.createUser(), async (q) =>
+      (await q("select record_count::int as n from public.record_connections($1, 'customer', $2) where doctype = 'quote'", [company, customer])).rows,
+    );
+    expect(strangerView).toEqual([{ n: 0 }]);
   });
 });
 
@@ -299,8 +311,8 @@ describe("restricted fields", () => {
     db.asUser(user, async (q) => (await q("select app.can_see_field($1, $2, $3) as ok", [company, doctype, column])).rows[0].ok);
 
   it("hides cost prices from cashiers but not from owners", async () => {
-    expect(await sees(owner, "product", "cost_price")).toBe(true);
-    expect(await sees(cashier, "product", "cost_price")).toBe(false);
+    expect(await sees(owner, "product", "avg_cost")).toBe(true);
+    expect(await sees(cashier, "product", "avg_cost")).toBe(false);
   });
 
   it("shows unrestricted fields to members only", async () => {
