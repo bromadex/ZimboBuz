@@ -19,6 +19,7 @@ const CATALOGUE = new Set([
   "restricted_fields",
   "tax_rates",
   "account_templates",
+  "offline_targets",
 ]);
 
 let db: Db;
@@ -101,6 +102,15 @@ async function seedBusiness(c: string, hq: string) {
   await q("insert into public.payment_allocations (company_id, payment_id, invoice_id, amount_cents) values ($1, $2, $3, 500)", [c, pay, inv]);
   await q("update public.payments set docstatus = 1 where id = $1", [pay]);
   await q("insert into public.leads (company_id, customer_id, source, name) values ($1, $2, 'manual', 'Lead')", [c, cust]);
+  const owner = (await q("select user_id from public.memberships where company_id = $1", [c])).user_id;
+  await q(
+    "insert into public.devices (company_id, branch_id, device_id, name, platform, registered_by) values ($1, $2, 'device-0001', 'Till', 'web', $3)",
+    [c, hq, owner],
+  );
+  await q(
+    "insert into public.offline_operations (company_id, device_id, client_op_id, op_type, target, payload, status, user_id) values ($1, 'device-0001', 'op-00000001', 'insert', 'customers', '{}', 'applied', $2)",
+    [c, owner],
+  );
 }
 
 afterAll(async () => {

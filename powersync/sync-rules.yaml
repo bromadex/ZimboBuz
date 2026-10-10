@@ -1,0 +1,47 @@
+# PowerSync sync rules (issue #24): what each signed-in device keeps locally
+# for offline work. Draft — verify against the PowerSync documentation and
+# licence terms (closed-source commercial use) before connecting PowerSync.
+#
+# Principles (master plan §12.8):
+#   * a device only receives data for companies the user is an active member of;
+#   * sensitive columns (average cost) are never synced;
+#   * writes do not go through these rules: devices upload queued actions to
+#     public.apply_offline_operation(), which applies them exactly once with the
+#     user's permissions and all database rules.
+
+bucket_definitions:
+  # Company-wide reference data every staff device needs to sell and look up.
+  company_reference:
+    parameters: >
+      select company_id from memberships
+      where user_id = request.user_id() and status = 'active'
+    data:
+      - select id, name, base_currency, prices_include_tax, vat_registered, status from companies where id = bucket.company_id
+      - select company_id, module_code, enabled from company_modules where company_id = bucket.company_id
+      - select company_id, feature_code, enabled from company_features where company_id = bucket.company_id
+      - select company_id, primary_color, secondary_color, accent_color, font_pair, theme_mode, motion_level, corner_style, logo_path, logo_mono_path, icon_path from company_branding where company_id = bucket.company_id
+      - select id, company_id, code, name, is_head_office from branches where company_id = bucket.company_id and archived_at is null
+      - select id, company_id, branch_id, code, name, is_default from stock_locations where company_id = bucket.company_id and archived_at is null
+      - select id, company_id, currency, rate, effective_at from exchange_rates where company_id = bucket.company_id
+      - select id, company_id, sku, barcode, name, unit, is_stock_item, tax_code, reorder_level, show_online from products where company_id = bucket.company_id and archived_at is null
+      - select company_id, product_id, currency, price_cents from product_prices where company_id = bucket.company_id
+      - select id, company_id, name, email, phone, whatsapp, currency, credit_limit_cents from customers where company_id = bucket.company_id and archived_at is null
+
+  # Stock on hand, so tills can warn before selling what is not there.
+  company_stock:
+    parameters: >
+      select company_id from memberships
+      where user_id = request.user_id() and status = 'active'
+    data:
+      - select company_id, product_id, location_id, quantity from stock_levels where company_id = bucket.company_id
+
+  # The user's own open activities, for reminders while offline.
+  my_activities:
+    parameters: select request.user_id() as user_id
+    data:
+      - select id, company_id, doctype, record_id, activity_type, summary, due_on, status from record_activities where assigned_to = bucket.user_id and status = 'open'
+
+  # Statutory reference data shared by all companies.
+  global_reference:
+    data:
+      - select code, rate_bp, effective_from from tax_rates
