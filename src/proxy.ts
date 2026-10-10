@@ -13,27 +13,37 @@ const lookup: SiteLookup = cachedLookup(
     : devLookup(platformDomain),
 );
 
+// Some servers (e.g. the standalone build) pass rewritten requests through the
+// proxy again. Rewrites carry this per-process token so they are let through;
+// requests from outside can never present it.
+const ROUTE_TOKEN = crypto.randomUUID();
+const ROUTING_HEADERS = ["x-zimerp-route", "x-zimerp-company", "x-zimerp-area"];
+
 const notFound = () =>
   new NextResponse("This site is not on ZimERP.", { status: 404, headers: { "content-type": "text/plain; charset=utf-8" } });
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const internal = pathname === "/s" || pathname === "/e" || pathname.startsWith("/s/") || pathname.startsWith("/e/");
-  const target = classifyHost(request.headers.get("host"), platformDomain);
+  if (internal && request.headers.get("x-zimerp-route") === ROUTE_TOKEN) return NextResponse.next();
 
+  const headers = new Headers(request.headers);
+  for (const name of ROUTING_HEADERS) headers.delete(name);
+
+  const target = classifyHost(request.headers.get("host"), platformDomain);
   if (target.kind === "invalid") return notFound();
-  if (target.kind === "platform") return internal ? notFound() : NextResponse.next();
+  if (target.kind === "platform") return internal ? notFound() : NextResponse.next({ request: { headers } });
 
   const site = await lookup(target.lookupHost);
   if (!site || !allowsArea(site, target)) return notFound();
 
+  if (internal) return notFound();
   const prefix = target.area === "erp" ? "/e" : "/s";
   const url = request.nextUrl.clone();
-  url.pathname = `${prefix}/${site.companySlug}${internal ? "" : pathname === "/" ? "" : pathname}`;
+  url.pathname = `${prefix}/${site.companySlug}${pathname === "/" ? "" : pathname}`;
   url.search = search;
-  if (internal) return notFound();
 
-  const headers = new Headers(request.headers);
+  headers.set("x-zimerp-route", ROUTE_TOKEN);
   headers.set("x-zimerp-company", site.companySlug);
   headers.set("x-zimerp-area", target.area);
   return NextResponse.rewrite(url, { request: { headers } });
