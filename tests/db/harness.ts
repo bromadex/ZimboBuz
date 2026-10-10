@@ -15,6 +15,8 @@ export type Db = {
   admin: pg.Client;
   /** Run `fn` as a signed-in user (role `authenticated`), rolled back afterwards. */
   asUser<T>(userId: string, fn: (q: Query) => Promise<T>): Promise<T>;
+  /** Run `fn` as the background worker role (`service_role`) and commit. */
+  asService<T>(fn: (q: Query) => Promise<T>): Promise<T>;
   /** Create an auth user and return its id. */
   createUser(email?: string): Promise<string>;
   close(): Promise<void>;
@@ -55,6 +57,22 @@ export async function createTestDb(): Promise<Db> {
         return await fn((sql, params) => client.query(sql, params));
       } finally {
         await client.query("rollback").catch(() => {});
+        await client.end();
+      }
+    },
+    async asService(fn) {
+      const client = new pg.Client({ connectionString: url.toString() });
+      await client.connect();
+      try {
+        await client.query("begin");
+        await client.query("set local role service_role");
+        const result = await fn((sql, params) => client.query(sql, params));
+        await client.query("commit");
+        return result;
+      } catch (e) {
+        await client.query("rollback").catch(() => {});
+        throw e;
+      } finally {
         await client.end();
       }
     },

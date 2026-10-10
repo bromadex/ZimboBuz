@@ -1,5 +1,6 @@
 // Company isolation suite (issue #20). Proves that one company can never read or
 // change another company's data, and that every table is covered automatically.
+import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createCompanyAs, createTestDb, type Db } from "./harness";
 
@@ -11,6 +12,11 @@ const CATALOGUE = new Set([
   "features",
   "permissions",
   "role_templates",
+  "event_types",
+  "event_subscribers",
+  "doctypes",
+  "doctype_links",
+  "restricted_fields",
 ]);
 
 let db: Db;
@@ -26,10 +32,36 @@ beforeAll(async () => {
   userB = await db.createUser("b@test.local");
   companyA = await createCompanyAs(db, userA, { slug: "alpha" });
   companyB = await createCompanyAs(db, userB, { slug: "bravo" });
-  for (const c of [companyA, companyB]) {
+  // Give every company-scoped table at least one row per company.
+  for (const [c, u] of [
+    [companyA, userA],
+    [companyB, userB],
+  ]) {
     await db.admin.query(
       "insert into public.company_features (company_id, feature_code, enabled) values ($1, 'pos.discounts', true)",
       [c],
+    );
+    await db.admin.query("select app.emit_event($1, 'lead.created', 'customer', 'x', '{}')", [c]);
+    const hq = (await db.admin.query("select id from public.branches where company_id = $1", [c])).rows[0].id;
+    await db.admin.query("select app.next_document_number($1, 'quote', $2)", [c, hq]);
+    await db.admin.query(
+      `insert into public.device_number_blocks (company_id, device_id, doctype, branch_id, year, first_value, last_value)
+       values ($1, 'till-1', 'quote', $2, 2026, 100, 199)`,
+      [c, hq],
+    );
+    const rec = randomUUID();
+    await db.admin.query(
+      "insert into public.record_messages (company_id, doctype, record_id, kind, body, author_id) values ($1, 'customer', $2, 'note', 'Hello', $3)",
+      [c, rec, u],
+    );
+    await db.admin.query(
+      "insert into public.record_followers (company_id, doctype, record_id, user_id) values ($1, 'customer', $2, $3)",
+      [c, rec, u],
+    );
+    await db.admin.query(
+      `insert into public.record_activities (company_id, doctype, record_id, activity_type, summary, due_on, assigned_to, created_by)
+       values ($1, 'customer', $2, 'call', 'Call back', current_date, $3, $3)`,
+      [c, rec, u],
     );
   }
   const { rows } = await db.admin.query<{ table_name: string }>(
