@@ -32,7 +32,7 @@ export default async function MovementPage({ params, searchParams }: PageProps<"
         `select m.id, m.number, m.movement_type, m.product_id, p.name as product_name, p.sku, p.unit, m.quantity, m.unit_cost,
                 fl.name as from_name, tl.name as to_name, m.notes, m.source_doctype, m.source_id, m.docstatus,
                 m.created_by, m.created_at, m.submitted_at, m.cancelled_at, m.cancelled_by, m.cancel_reason
-         from public.stock_movements m
+         from public.stock_movements_v m
          join public.products p on p.id = m.product_id
          left join public.stock_locations fl on fl.id = m.from_location_id
          left join public.stock_locations tl on tl.id = m.to_location_id

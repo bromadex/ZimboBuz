@@ -146,17 +146,23 @@ describe("stock adjustments", () => {
   it("values a positive adjustment without a cost at the average cost", async () => {
     const p = await product("ADJ-1");
     await receive(p, 4); // at 100 cents each
-    const cost = await db.asUser(storekeeper, async (q) => {
-      const m = (
-        await q<{ id: string; unit_cost: string }>(
-          `insert into public.stock_movements (company_id, branch_id, movement_type, product_id, to_location_id, quantity)
-           values ($1, $2, 'adjustment_in', $3, $4, 1) returning id, unit_cost`,
-          [company, hq, p, mainLoc],
-        )
-      ).rows[0];
-      await q("update public.stock_movements set docstatus = 1 where id = $1", [m.id]);
-      return m.unit_cost;
-    });
+    // The storekeeper cannot read the cost (restricted field): act as them and
+    // commit, then check the stored cost as the system.
+    await db.admin.query("begin");
+    await db.admin.query("set local role authenticated");
+    await db.admin.query("select set_config('request.jwt.claim.sub', $1, true)", [storekeeper]);
+    const id = (
+      await db.admin.query(
+        `insert into public.stock_movements (company_id, branch_id, movement_type, product_id, to_location_id, quantity)
+         values ($1, $2, 'adjustment_in', $3, $4, 1) returning id`,
+        [company, hq, p, mainLoc],
+      )
+    ).rows[0].id;
+    await db.admin.query("update public.stock_movements set docstatus = 1 where id = $1", [id]);
+    const viaView = (await db.admin.query("select unit_cost from public.stock_movements_v where id = $1", [id])).rows[0];
+    await db.admin.query("commit");
+    expect(viaView.unit_cost).toBeNull();
+    const cost = (await db.admin.query("select unit_cost from public.stock_movements where id = $1", [id])).rows[0].unit_cost;
     expect(cost).toBe("100.0000");
   });
 });
@@ -287,5 +293,25 @@ describe("importing", () => {
     await expect(
       db.asUser(storekeeper, (q) => importCustomers(q, company, [{ name: "X", companyName: null, phone: null, whatsapp: null, email: null, currency: "USD" }])),
     ).rejects.toThrow(/row-level security/);
+  });
+});
+
+describe("cost on stock movements (restricted field)", () => {
+  it("hides unit cost from storekeepers but shows it to cost viewers through the view", async () => {
+    const mov = (await db.admin.query("select id from public.stock_movements where unit_cost is not null limit 1")).rows[0]?.id;
+    expect(mov).toBeTruthy();
+    const keeper = (
+      await db.admin.query(
+        `select m.user_id from public.memberships m join public.roles r on r.id = m.role_id where r.code = 'storekeeper' limit 1`,
+      )
+    ).rows[0]?.user_id;
+    const ownerId = (await db.admin.query(`select m.user_id from public.memberships m join public.roles r on r.id = m.role_id where r.code = 'owner' limit 1`)).rows[0].user_id;
+    if (keeper) {
+      await expect(db.asUser(keeper, (q) => q("select unit_cost from public.stock_movements where id = $1", [mov]))).rejects.toThrow(/permission denied/);
+      const hidden = await db.asUser(keeper, async (q) => (await q("select unit_cost from public.stock_movements_v where id = $1", [mov])).rows[0]);
+      expect(hidden?.unit_cost ?? null).toBeNull();
+    }
+    const shown = await db.asUser(ownerId, async (q) => (await q("select unit_cost from public.stock_movements_v where id = $1", [mov])).rows[0]);
+    expect(shown.unit_cost).not.toBeNull();
   });
 });
