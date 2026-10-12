@@ -8,8 +8,7 @@ import { whatsAppLink } from "@/lib/site/theme";
 import { publicProduct, publicSite } from "@/server/web/site-data";
 
 // One product page.
-// TODO(sales): a "Buy" button with online payment (feature website.buy) goes
-// beside "Add to quote" when checkout is built.
+// Online payment happens from the basket (Your quote page) when the shop takes it.
 
 export async function generateMetadata({ params }: PageProps<"/s/[slug]/shop/[id]">): Promise<Metadata> {
   const { slug, id } = await params;

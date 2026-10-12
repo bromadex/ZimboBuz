@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import { createAdapters } from "@/server/adapters";
+import { getAdapters } from "@/server/adapters/shared";
 import { getPool } from "@/server/db";
 import { createHandlers } from "@/server/events/handlers";
 import { PgDeliveryStore, processDeliveries } from "@/server/events/worker";
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     return Response.json({ error: "unauthorised" }, { status: 401 });
   }
   const db = getPool();
-  const adapters = createAdapters();
+  const adapters = getAdapters();
   const store = new PgDeliveryStore(db);
 
   const { rows } = await db.query<{ n: number }>("select app.emit_due_activities() as n");

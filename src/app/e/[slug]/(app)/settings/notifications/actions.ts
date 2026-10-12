@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { act, text, UserError } from "@/server/act";
-import { createAdapters } from "@/server/adapters";
+import { getAdapters } from "@/server/adapters/shared";
 import { toWhatsAppNumber } from "@/server/adapters/messaging";
 import { collectSummary, harareDate, summaryText } from "@/server/daily-summary";
 import { requirePermission } from "@/server/company";
@@ -53,7 +53,7 @@ export async function sendTestSummary(slug: string): Promise<never> {
     if (!prefs?.phones.length) throw new UserError("Save at least one WhatsApp number first.");
     // Permission checked above; the figures for this company are read as the server.
     const body = summaryText(await collectSummary(getPool(), ctx.company.id, harareDate(new Date())));
-    const adapters = createAdapters();
+    const adapters = getAdapters();
     for (const to of prefs.phones) await adapters.messaging.sendText({ to, text: `Test: ${body}` });
     const n = `${prefs.phones.length} number${prefs.phones.length === 1 ? "" : "s"}`;
     result = {

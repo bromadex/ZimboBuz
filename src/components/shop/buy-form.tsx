@@ -10,11 +10,15 @@ export function BuyForm({
   currency,
   items,
   onDone,
+  inputClass = "w-full rounded-[var(--radius,0.5rem)] border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900",
+  buttonClass = "w-full rounded-[var(--radius,0.5rem)] bg-[var(--brand,#0b6e4f)] px-4 py-3 font-semibold text-white disabled:opacity-50",
 }: {
   slug: string;
   currency: string;
   items: Array<{ productId: string; quantity: number }>;
   onDone?: () => void;
+  inputClass?: string;
+  buttonClass?: string;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -47,7 +51,7 @@ export function BuyForm({
     }
   }
 
-  const input = "w-full rounded-[var(--radius,0.5rem)] border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900";
+  const input = inputClass;
   return (
     <form onSubmit={submit} className="space-y-3">
       <input name="name" required placeholder="Your name" aria-label="Your name" className={input} />
@@ -58,7 +62,7 @@ export function BuyForm({
           {error}
         </p>
       ) : null}
-      <button type="submit" disabled={busy || items.length === 0} className="w-full rounded-[var(--radius,0.5rem)] bg-[var(--brand,#0b6e4f)] px-4 py-3 font-semibold text-white disabled:opacity-50">
+      <button type="submit" disabled={busy || items.length === 0} className={buttonClass}>
         {busy ? "Taking you to payment…" : "Pay now with EcoCash or card"}
       </button>
       <p className="text-center text-xs text-zinc-500">Payments are handled securely by Paynow.</p>

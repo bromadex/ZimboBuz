@@ -1,4 +1,4 @@
-import { createAdapters } from "@/server/adapters";
+import { getAdapters } from "@/server/adapters/shared";
 import { cronAuthorised } from "@/server/cron";
 import { sendDueSummaries } from "@/server/daily-summary";
 import { getPool } from "@/server/db";
@@ -9,7 +9,7 @@ import { getPool } from "@/server/db";
 
 export async function GET(request: Request) {
   if (!cronAuthorised(request)) return Response.json({ error: "unauthorised" }, { status: 401 });
-  const adapters = createAdapters();
+  const adapters = getAdapters();
   const results = await sendDueSummaries(getPool(), adapters.messaging);
   return Response.json({ results, messenger: adapters.messaging.name });
 }

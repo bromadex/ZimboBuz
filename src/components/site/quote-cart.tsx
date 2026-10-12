@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useActionState, useEffect, useState, useSyncExternalStore } from "react";
 import { formatMoney, type CurrencyCode } from "@/lib/money";
+import { BuyForm } from "@/components/shop/buy-form";
 import type { EnquiryState } from "./enquiry-state";
 
 // "Add to quote" cart (P9): kept in the visitor's browser (localStorage, one
 // list per company site) and sent through public.submit_website_enquiry,
 // which creates a lead and a draft quote in the ERP.
-// TODO(sales): online "Buy" checkout and payment (feature website.buy) are
-// added by the sales area; this cart only requests quotes.
+// When the shop takes online payments (feature website.buy and a Paynow
+// account for the currency), priced baskets can also be paid straight away.
 
 export interface CartItem {
   id: string;
@@ -155,9 +156,12 @@ export function CartLink({ slug }: { slug: string }) {
 export function QuoteCart({
   slug,
   action,
+  buyCurrencies = [],
 }: {
   slug: string;
   action: (state: EnquiryState, form: FormData) => Promise<EnquiryState>;
+  /** Currencies the shop can take online payment in (empty: quotes only). */
+  buyCurrencies?: string[];
 }) {
   const items = useCart(slug);
   const [state, formAction, pending] = useActionState(action, { status: "idle" } as EnquiryState);
@@ -242,8 +246,23 @@ export function QuoteCart({
         ) : null}
       </section>
 
+      <div className="space-y-6">
+      {known && currency && items.length > 0 && buyCurrencies.includes(currency) ? (
+        <section className="zs-card p-4 sm:p-6" aria-label="Pay now">
+          <h2 className="zs-h3">Buy now</h2>
+          <p className="zs-muted mt-1 mb-4 text-sm">Pay {total !== null ? price(total.toString(), currency) : ""} by EcoCash, OneMoney or card.</p>
+          <BuyForm
+            slug={slug}
+            currency={currency}
+            items={items.map((i) => ({ productId: i.id, quantity: i.quantity }))}
+            onDone={() => write(slug, [])}
+            inputClass="zs-input w-full"
+            buttonClass="zs-btn zs-btn-block"
+          />
+        </section>
+      ) : null}
       <section className="zs-card p-4 sm:p-6" aria-label="Your details">
-        <h2 className="zs-h3">Where should we send your quote?</h2>
+        <h2 className="zs-h3">{buyCurrencies.length ? "Or ask for a quote" : "Where should we send your quote?"}</h2>
         <form action={formAction} className="mt-4 space-y-4">
           <input type="hidden" name="items" value={JSON.stringify(items.map((i) => ({ product_id: i.id, quantity: i.quantity })))} />
           <EnquiryFields />
@@ -258,6 +277,7 @@ export function QuoteCart({
           <p className="zs-muted text-xs">We only use your details to reply to you.</p>
         </form>
       </section>
+      </div>
     </div>
   );
 }
