@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ListView } from "@/components/list-view";
 import { Badge, Notice, PageHeader } from "@/components/ui";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, money } from "@/lib/format";
 import { likePattern, listParams } from "@/lib/list-params";
 import { requirePermission } from "@/server/company";
 import { withUser } from "@/server/data";
@@ -30,7 +30,7 @@ export default async function LeadsPage({ params, searchParams }: PageProps<"/e/
   const customer = /^[0-9a-f-]{36}$/i.test(lp.get("customer") ?? "") ? lp.get("customer")! : null;
   const canEdit = ctx.permissions.has("sales.quote.create");
 
-  const { rows, total } = await withUser(ctx.userId, async (q) => {
+  const { rows, total, orders } = await withUser(ctx.userId, async (q) => {
     const where = `l.company_id = $1 and ($2::text is null or l.status = $2) and ($3::uuid is null or l.customer_id = $3::uuid)
       and ($4 = '' or l.name ilike $5 or l.email ilike $5 or l.phone ilike $5 or l.message ilike $5)`;
     const args = [ctx.company.id, status, customer, lp.q, likePattern(lp.q)];
@@ -42,13 +42,44 @@ export default async function LeadsPage({ params, searchParams }: PageProps<"/e/
         args,
       )
     ).rows;
-    return { rows, total };
+    const orders = (
+      await q<{ id: string; reference: string; invoice_id: string; currency: string; total_cents: string; status: string; problem: string | null; created_at: Date; customer: string }>(
+        `select w.id, w.reference, w.invoice_id, w.currency, w.total_cents, w.status, w.problem, w.created_at, c.name as customer
+         from public.web_orders w join public.customers c on c.id = w.customer_id
+         where w.company_id = $1 and (w.status = 'needs_attention' or (w.status = 'paid' and w.paid_at > now() - interval '7 days'))
+         order by (w.status = 'needs_attention') desc, w.created_at desc limit 20`,
+        [ctx.company.id],
+      )
+    ).rows;
+    return { rows, total, orders };
   });
 
   return (
     <>
       <PageHeader title="Enquiries" description="Messages and quote requests from your website and store. Each one is linked to a customer." />
       <Notice error={sp.error} success={sp.success} />
+      {orders.length ? (
+        <section className="mb-6 rounded-[var(--radius)] border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+          <h2 className="mb-2 font-semibold">Online orders (last 7 days)</h2>
+          <ul className="divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
+            {orders.map((o) => (
+              <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span>
+                  <Link className="font-medium underline" href={`/sales/invoices/${o.invoice_id}`}>
+                    {o.reference}
+                  </Link>{" "}
+                  · {o.customer} · {money(o.total_cents, o.currency)} · {formatDateTime(o.created_at)}
+                </span>
+                {o.status === "needs_attention" ? (
+                  <Badge tone="warn">Paid, needs attention{o.problem ? `: ${o.problem}` : ""}</Badge>
+                ) : (
+                  <Badge tone="ok">Paid</Badge>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       <ListView<Row>
         path="/leads"
         sp={sp}
