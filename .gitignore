@@ -35,3 +35,4 @@ next-env.d.ts
 node_modules/
 docs/pdf-build/_render_*.html
 docs/pdf-build/*.pdf
+.claude/worktrees/
