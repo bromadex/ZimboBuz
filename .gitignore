@@ -35,3 +35,5 @@ next-env.d.ts
 node_modules/
 docs/pdf-build/_render_*.html
 docs/pdf-build/*.pdf
+# local file storage (development and on-premise uploads)
+/.data/

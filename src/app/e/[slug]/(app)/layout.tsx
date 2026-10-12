@@ -60,9 +60,14 @@ export default async function ErpLayout({ children, params }: LayoutProps<"/e/[s
     <div style={style} className={`flex min-h-screen flex-1 flex-col md:flex-row ${theme}`} data-theme={branding.themeMode}>
       <aside className="border-b border-zinc-200 bg-zinc-50 md:sticky md:top-0 md:h-screen md:w-60 md:shrink-0 md:overflow-y-auto md:border-r md:border-b-0 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-center gap-3 px-4 py-4">
-          <span className="flex size-9 items-center justify-center rounded-[var(--radius)] bg-[var(--brand)] font-bold text-white" aria-hidden>
-            {ctx.company.name.charAt(0).toUpperCase()}
-          </span>
+          {branding.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- the company's uploaded logo
+            <img src={branding.logoUrl} alt="" className="size-9 shrink-0 rounded-[var(--radius)] object-contain" />
+          ) : (
+            <span className="flex size-9 items-center justify-center rounded-[var(--radius)] bg-[var(--brand)] font-bold text-white" aria-hidden>
+              {ctx.company.name.charAt(0).toUpperCase()}
+            </span>
+          )}
           <div className="min-w-0">
             <p className="truncate font-semibold">{ctx.company.name}</p>
             <p className="truncate text-xs text-zinc-500">
