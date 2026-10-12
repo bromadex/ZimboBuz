@@ -1,4 +1,4 @@
-// A small CSV reader and writer (RFC 4180 style) for importing and exporting
+// A small CSV reader (imports) and writer (exports) (RFC 4180 style) for importing and exporting
 // data: fields separated by commas, optionally wrapped in double quotes, with
 // "" for a quote inside a quoted field; quoted fields may contain commas and
 // line breaks. Lines end in LF, CRLF or CR. Spreadsheet programs add a byte
@@ -8,6 +8,15 @@ export class CsvError extends Error {}
 
 /** Parses CSV text into rows of fields. Blank lines are skipped. */
 export function parseCsv(input: string): string[][] {
+  return parseRaw(input).map((row) => row.map(unprotect));
+}
+
+/** Undoes the apostrophe csvCell() puts before formula-like text ("'+263…" → "+263…"). */
+function unprotect(field: string): string {
+  return /^'[=+\-@]/.test(field) ? field.slice(1) : field;
+}
+
+function parseRaw(input: string): string[][] {
   const text = input.charCodeAt(0) === 0xfeff ? input.slice(1) : input;
   const rows: string[][] = [];
   let row: string[] = [];
@@ -73,11 +82,31 @@ export function parseCsv(input: string): string[][] {
   return rows;
 }
 
-function quote(value: string): string {
-  return /[",\r\n]/.test(value) || value !== value.trim() ? `"${value.replace(/"/g, '""')}"` : value;
+// ---------------------------------------------------------------------------
+// Writing CSV (RFC 4180), safe to open in Excel and other
+// spreadsheets: cells that a spreadsheet would treat as a formula (starting
+// with =, +, -, @, or a tab or carriage return) get a leading apostrophe, so
+// "=HYPERLINK(...)" typed as a customer name stays text. Plain numbers are
+// written as numbers, so a negative amount like -12.50 is left alone.
+
+export type CsvCell = string | number | bigint | boolean | null | undefined;
+
+const FORMULA_START = /^[=+\-@\t\r]/;
+const PLAIN_NUMBER = /^-?\d+(\.\d+)?$/;
+
+export function csvCell(value: CsvCell): string {
+  if (value === null || value === undefined) return "";
+  let text = typeof value === "string" ? value : String(value);
+  if (typeof value === "string" && FORMULA_START.test(text) && !PLAIN_NUMBER.test(text)) text = `'${text}`;
+  return /[",\r\n]/.test(text) || text !== text.trim() ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-/** Writes rows as CSV with CRLF line endings (what spreadsheet programs expect). */
-export function toCsv(rows: Array<Array<string | number | null | undefined>>): string {
-  return rows.map((r) => r.map((v) => quote(v === null || v === undefined ? "" : String(v))).join(",")).join("\r\n") + "\r\n";
+/** Header row plus data rows, with CRLF line endings and a BOM so Excel reads UTF-8 (ZiG, names with accents). */
+export function toCsv(header: string[], rows: CsvCell[][]): string {
+  return "﻿" + [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n") + "\r\n";
+}
+
+/** A safe file name like "sales-by-day-2026-10-01-to-2026-10-12.csv". */
+export function csvFileName(...parts: string[]): string {
+  return `${parts.join("-").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "")}.csv`;
 }

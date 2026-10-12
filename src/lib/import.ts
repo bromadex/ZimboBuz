@@ -59,7 +59,7 @@ export function templateCsv(kind: ImportKind, base: CurrencyCode): string {
           ["Tendai Moyo", "", "077 123 4567", "", "tendai@example.com", LABEL[base]],
           ["Rudo Chikore", "Chikore Builders", "+263 71 234 5678", "+263 71 234 5678", "", "USD"],
         ];
-  return toCsv([templateHeaders(kind, base), ...examples]);
+  return toCsv(templateHeaders(kind, base), examples);
 }
 
 function normaliseHeader(h: string): string {
