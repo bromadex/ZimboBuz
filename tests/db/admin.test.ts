@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { FakeMessenger } from "@/server/adapters/messaging";
+import { sendDueSummaries } from "@/server/daily-summary";
 import { addMember, createCompanyAs, createTestDb, type Db } from "./harness";
 
 // Administration (P3, P10, P12, P17): invitations, membership rules, custom
@@ -323,6 +325,41 @@ describe("company preferences", () => {
     await expect(
       db.asUser(owner, (q) => q("insert into public.daily_summary_runs (company_id, summary_date) values ($1, current_date + 1)", [company])),
     ).rejects.toThrow(/permission denied/);
+  });
+});
+
+describe("daily WhatsApp summary", () => {
+  it("sends once per company per day, after the chosen hour, and retries failures", async () => {
+    const summaryCo = await createCompanyAs(db, owner, { slug: "summary-co", plan: "business", modules: ["pos", "sales"] });
+    await db.admin.query(
+      "insert into public.company_preferences (company_id, daily_summary_enabled, daily_summary_phones, daily_summary_hour) values ($1, true, '{0771234567,0712345678}', 18)",
+      [summaryCo],
+    );
+    const ours = (runs: Array<{ companyId: string }>) => runs.filter((r) => r.companyId === summaryCo);
+    const messenger = new FakeMessenger();
+    // 17:00 in Harare: not yet.
+    expect(ours(await sendDueSummaries(db.admin, messenger, new Date("2031-03-04T15:00:00Z")))).toEqual([]);
+    // 18:00: sent to both numbers.
+    const first = ours(await sendDueSummaries(db.admin, messenger, new Date("2031-03-04T16:00:00Z")));
+    expect(first).toEqual([{ companyId: summaryCo, status: "sent", recipients: 2 }]);
+    expect(messenger.sent.map((m) => m.to)).toEqual(["263771234567", "263712345678"]);
+    expect((messenger.sent[0] as { text: string }).text).toMatch(/^summary-co: summary for Tue 4 Mar/);
+    // Later the same day: nothing more.
+    const later = new FakeMessenger();
+    expect(ours(await sendDueSummaries(db.admin, later, new Date("2031-03-04T20:00:00Z")))).toEqual([]);
+    expect(later.sent.filter((m) => "text" in m && m.text.startsWith("summary-co"))).toEqual([]);
+    const run = (await db.admin.query("select status, recipients, body from public.daily_summary_runs where company_id = $1", [summaryCo])).rows[0];
+    expect(run).toMatchObject({ status: "sent", recipients: 2 });
+
+    // A failed send is recorded and tried again by the next run.
+    const broken = new FakeMessenger();
+    broken.sendText = async () => {
+      throw new Error("WhatsApp is down");
+    };
+    const failed = ours(await sendDueSummaries(db.admin, broken, new Date("2031-03-05T16:30:00Z")));
+    expect(failed[0]).toMatchObject({ status: "failed", error: "WhatsApp is down" });
+    const retried = ours(await sendDueSummaries(db.admin, messenger, new Date("2031-03-05T17:00:00Z")));
+    expect(retried[0]).toMatchObject({ status: "sent" });
   });
 });
 
