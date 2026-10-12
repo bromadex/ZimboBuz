@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { dashboardDates, loadDashboard } from "@/server/dashboard";
 import { REPORTS, findReport, totalsByCurrency } from "@/server/reports";
 import { addMember, createCompanyAs, createTestDb, type Db } from "./harness";
 
@@ -105,5 +106,33 @@ describe("reports", () => {
   it("totals per currency", async () => {
     const def = findReport("sales-by-day")!;
     expect(totalsByCurrency(def, await run(owner, "sales-by-day"))).toEqual([{ currency: "USD", invoices: 1, net: "1991", tax: "309", total: "2300" }]);
+  });
+});
+
+describe("owner dashboard", () => {
+  it("works out the week and month", () => {
+    expect(dashboardDates("2026-06-03")).toEqual({ today: "2026-06-03", weekStart: "2026-06-01", monthStart: "2026-06-01", chartStart: "2026-05-21" });
+    expect(dashboardDates("2026-06-07").weekStart).toBe("2026-06-01"); // Sunday belongs to the week starting Monday
+  });
+
+  it("shows the owner today's figures, matching the records", async () => {
+    const perms = new Set((await db.asUser(owner, (q) => q<{ code: string }>("select public.my_permissions($1) as code", [company]))).rows.map((r) => r.code));
+    const d = await db.asUser(owner, (q) => loadDashboard(q, company, owner, perms, dashboardDates("2026-06-02")));
+    expect(d.sales).toEqual([{ currency: "USD", today: "0", todayCount: 0, week: "2300", month: "2300" }]);
+    expect(d.paymentsToday).toEqual([{ method: "ecocash", currency: "USD", total: "1000" }]);
+    expect(d.owed).toEqual([{ currency: "USD", total: "1300", overdue: "0" }]);
+    expect(d.lowStock).toBe(0);
+    expect(d.topProducts).toEqual([{ name: "Cement 50kg", quantity: "2.000", base: "2300" }]);
+    expect(d.daily).toHaveLength(14);
+    expect(d.activities).toEqual([]);
+  });
+
+  it("hides tiles the user may not see", async () => {
+    const storekeeper = (await db.admin.query("select id from auth.users where email = 'store@reports.test'")).rows[0].id;
+    const perms = new Set((await db.asUser(storekeeper, (q) => q<{ code: string }>("select public.my_permissions($1) as code", [company]))).rows.map((r) => r.code));
+    const d = await db.asUser(storekeeper, (q) => loadDashboard(q, company, storekeeper, perms, dashboardDates("2026-06-02")));
+    expect(d.sales).toBeNull();
+    expect(d.owed).toBeNull();
+    expect(d.lowStock).toBe(0);
   });
 });
