@@ -5,7 +5,7 @@ describe("csvCell", () => {
   it("leaves plain values alone", () => {
     expect(csvCell("Cement 50kg")).toBe("Cement 50kg");
     expect(csvCell(12)).toBe("12");
-    expect(csvCell(12n)).toBe("12");
+    expect(csvCell(BigInt(12))).toBe("12");
     expect(csvCell(null)).toBe("");
     expect(csvCell(undefined)).toBe("");
     expect(csvCell(true)).toBe("true");

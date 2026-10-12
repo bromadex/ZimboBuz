@@ -5,6 +5,7 @@ import type { CurrencyCode } from "@/lib/money";
 import { currentUserId } from "./auth";
 import { withUser } from "./data";
 import { getPool } from "./db";
+import { twoStepAvailable, twoStepEnabled } from "./two-step";
 
 export interface Branding {
   primaryColor: string;
@@ -32,11 +33,19 @@ export interface CompanyContext {
   roleName: string;
   permissions: Set<string>;
   branding: Branding;
+  /** Two-step sign-in: whether the user has it on, and whether the company requires it of them. */
+  twoStep: { enabled: boolean; required: boolean };
+}
+
+/** Admin permissions that make two-step sign-in required when the company asks for it. */
+export function hasAdminPermission(permissions: Set<string>): boolean {
+  return [...permissions].some((p) => p.startsWith("admin.") && p !== "admin.audit.view");
 }
 
 export type CompanyLookup =
   | { kind: "signed_out" }
-  | { kind: "no_access"; userId: string; userEmail: string }
+  | { kind: "no_access"; userId: string; userEmail: string; disabled?: boolean }
+  | { kind: "invited"; userId: string; userEmail: string; companyId: string; companyName: string; roleName: string; userType: "full" | "light" }
   | ({ kind: "ok" } & CompanyContext);
 
 /** The signed-in user's view of a company, read through row-level security. Cached per request. */
@@ -66,9 +75,23 @@ export const lookupCompany = cache(async (slug: string): Promise<CompanyLookup> 
       [slug],
     );
     const row = rows[0];
-    if (!row) return { kind: "no_access", userId, userEmail: email };
+    if (!row) {
+      const m = (
+        await q<{ company_id: string; company_name: string; role_name: string; user_type: "full" | "light"; status: string }>(
+          "select * from public.my_membership($1)",
+          [slug],
+        )
+      ).rows[0];
+      if (m?.status === "invited") {
+        return { kind: "invited", userId, userEmail: email, companyId: m.company_id, companyName: m.company_name, roleName: m.role_name, userType: m.user_type };
+      }
+      return { kind: "no_access", userId, userEmail: email, disabled: m?.status === "disabled" };
+    }
 
     const perms = await q<{ code: string }>("select public.my_permissions($1) as code", [row.id]);
+    const permissions = new Set(perms.rows.map((p) => p.code));
+    const requires = (await q<{ r: boolean }>("select app.requires_two_step($1) as r", [row.id])).rows[0]?.r ?? false;
+    const enabled = await twoStepEnabled(userId);
     return {
       kind: "ok",
       userId,
@@ -85,7 +108,8 @@ export const lookupCompany = cache(async (slug: string): Promise<CompanyLookup> 
         pricesIncludeTax: row.prices_include_tax,
       },
       roleName: row.role_name,
-      permissions: new Set(perms.rows.map((p) => p.code)),
+      permissions,
+      twoStep: { enabled, required: requires && hasAdminPermission(permissions) && twoStepAvailable() },
       branding: {
         primaryColor: row.primary_color ?? "#0b6e4f",
         secondaryColor: row.secondary_color ?? "#c98f00",
@@ -101,8 +125,10 @@ export const lookupCompany = cache(async (slug: string): Promise<CompanyLookup> 
 /** For pages and actions inside the ERP: the company context, or a redirect to sign in. */
 export async function requireCompany(slug: string): Promise<CompanyContext> {
   const result = await lookupCompany(slug);
-  if (result.kind === "signed_out") redirect("/sign-in");
+  if (result.kind === "signed_out" || result.kind === "invited") redirect("/sign-in");
   if (result.kind === "no_access") redirect("/sign-in?error=" + encodeURIComponent("You are not a member of this company."));
+  // The company asks staff with admin permissions to use two-step sign-in.
+  if (result.twoStep.required && !result.twoStep.enabled) redirect("/account/security?required=1");
   return result;
 }
 
