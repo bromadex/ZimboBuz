@@ -1,8 +1,17 @@
+/// <reference types="vite/client" />
 // Company isolation suite (issue #20). Proves that one company can never read or
 // change another company's data, and that every table is covered automatically.
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createCompanyAs, createTestDb, type Db } from "./harness";
+
+// Each area of the product adds a seed file in ./seeds giving its tables rows
+// for a company (and naming any catalogue tables it adds).
+type SeedModule = {
+  catalogue?: string[];
+  seed?: (db: Db, company: string, branch: string, user: string) => Promise<void>;
+};
+const SEEDS = Object.values(import.meta.glob<SeedModule>("./seeds/*.ts", { eager: true }));
 
 /** Global tables shared by every company (read-only catalogue). */
 const CATALOGUE = new Set([
@@ -20,6 +29,7 @@ const CATALOGUE = new Set([
   "tax_rates",
   "account_templates",
   "offline_targets",
+  ...SEEDS.flatMap((m) => m.catalogue ?? []),
 ]);
 
 let db: Db;
@@ -67,6 +77,7 @@ beforeAll(async () => {
       [c, rec, u],
     );
     await seedBusiness(c, hq);
+    for (const m of SEEDS) await m.seed?.(db, c, hq, u);
   }
   const { rows } = await db.admin.query<{ table_name: string }>(
     `select table_name from information_schema.columns

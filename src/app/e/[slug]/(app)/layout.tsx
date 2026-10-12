@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { requireCompany, type Branding } from "@/server/company";
 import { signOut } from "../actions";
+import { visibleNav } from "./nav";
 
 // The ERP shell: navigation filtered by what the user may do, and the
 // company's brand kit applied through CSS variables (P20).
@@ -14,20 +15,32 @@ const FONTS: Record<Branding["fontPair"], string> = {
 };
 const RADII: Record<Branding["cornerStyle"], string> = { square: "0", rounded: "0.5rem", pill: "1rem" };
 
-const NAV: Array<{ href: string; label: string; permission?: string }> = [
-  { href: "/", label: "Home" },
-  { href: "/products", label: "Products", permission: "core.products.view" },
-  { href: "/customers", label: "Customers", permission: "core.customers.view" },
-  { href: "/settings/rates", label: "Exchange rates" },
-  { href: "/settings/modules", label: "Modules and features", permission: "admin.modules.manage" },
-  { href: "/settings/branding", label: "Brand kit", permission: "admin.branding.edit" },
-];
-
 const STATUS_NOTICE: Record<string, string> = {
   grace: "Your subscription payment is overdue. Everything still works for now; please pay to avoid interruption.",
   read_only: "Your subscription has lapsed, so this company is read-only. You can still view and export your records.",
   suspended: "This company is suspended. Please contact ZimERP support.",
 };
+
+function Menu({ groups }: { groups: ReturnType<typeof visibleNav> }) {
+  return (
+    <nav aria-label="Main" className="space-y-3 px-2 pb-3">
+      {groups.map((g) => (
+        <div key={g.label ?? "main"}>
+          {g.label ? <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">{g.label}</p> : null}
+          {g.items.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="block rounded-[var(--radius)] px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      ))}
+    </nav>
+  );
+}
 
 export default async function ErpLayout({ children, params }: LayoutProps<"/e/[slug]">) {
   const { slug } = await params;
@@ -40,11 +53,12 @@ export default async function ErpLayout({ children, params }: LayoutProps<"/e/[s
     "--radius": RADII[branding.cornerStyle],
     fontFamily: FONTS[branding.fontPair],
   } as CSSProperties;
+  const groups = visibleNav(ctx.permissions);
   const theme = branding.themeMode === "system" ? "" : branding.themeMode === "dark" ? "dark bg-zinc-950 text-zinc-100" : "bg-white text-zinc-900";
 
   return (
     <div style={style} className={`flex min-h-screen flex-1 flex-col md:flex-row ${theme}`} data-theme={branding.themeMode}>
-      <aside className="border-b border-zinc-200 bg-zinc-50 md:w-60 md:shrink-0 md:border-r md:border-b-0 dark:border-zinc-800 dark:bg-zinc-900">
+      <aside className="border-b border-zinc-200 bg-zinc-50 md:sticky md:top-0 md:h-screen md:w-60 md:shrink-0 md:overflow-y-auto md:border-r md:border-b-0 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-center gap-3 px-4 py-4">
           <span className="flex size-9 items-center justify-center rounded-[var(--radius)] bg-[var(--brand)] font-bold text-white" aria-hidden>
             {ctx.company.name.charAt(0).toUpperCase()}
@@ -56,19 +70,20 @@ export default async function ErpLayout({ children, params }: LayoutProps<"/e/[s
             </p>
           </div>
         </div>
-        <nav aria-label="Main" className="flex gap-1 overflow-x-auto px-2 pb-3 md:flex-col md:overflow-visible">
-          {NAV.filter((item) => !item.permission || ctx.permissions.has(item.permission)).map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="whitespace-nowrap rounded-[var(--radius)] px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <form action={signOut} className="px-4 pb-4">
+        <details className="group md:hidden" >
+          <summary className="cursor-pointer list-none px-4 pb-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            Menu <span aria-hidden className="inline-block transition group-open:rotate-90">›</span>
+          </summary>
+          <Menu groups={groups} />
+        </details>
+        <div className="hidden md:block">
+          <Menu groups={groups} />
+        </div>
+        <form action={signOut} className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
           <p className="mb-1 truncate text-xs text-zinc-500">{ctx.userEmail}</p>
+          <Link href="/account/security" className="mr-3 text-xs font-semibold text-zinc-600 underline dark:text-zinc-400">
+            Sign-in security
+          </Link>
           <button type="submit" className="text-xs font-semibold text-zinc-600 underline dark:text-zinc-400">
             Sign out
           </button>

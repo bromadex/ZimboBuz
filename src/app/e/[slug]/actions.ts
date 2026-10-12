@@ -1,56 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { parseMoney } from "@/lib/money";
+import { act, amount, changed, CURRENCIES, optional, text, UserError } from "@/server/act";
 import { devSignIn, endSession, startSession } from "@/server/auth";
-import { requireCompany } from "@/server/company";
-import { friendlyError, withUser, type Query } from "@/server/data";
+import { friendlyError } from "@/server/data";
 import { safeNextPath } from "@/server/urls";
 
-// ERP form actions. Each one runs as the signed-in user, so row-level
-// security and app.can() decide what is allowed; the checks here only give
-// clearer messages. Paths are host-relative: the proxy maps them to this company.
-
-const CURRENCIES = ["USD", "ZWG", "ZAR"] as const;
-
-async function act(slug: string, path: string, success: string, work: (q: Query, companyId: string) => Promise<unknown>): Promise<never> {
-  const ctx = await requireCompany(slug);
-  let error: string | null = null;
-  try {
-    await withUser(ctx.userId, (q) => work(q, ctx.company.id));
-  } catch (e) {
-    error = e instanceof UserError ? e.message : friendlyError(e);
-  }
-  // Settings such as the brand kit and modules change the shell, not just the page.
-  if (!error) revalidatePath("/e/[slug]", "layout");
-  redirect(`${path}?${new URLSearchParams(error ? { error } : { success })}`);
-}
-
-class UserError extends Error {}
-
-/** Row-level security hides rows a user may not change, so an update that touched nothing was refused. */
-async function changed(result: Promise<{ rowCount: number | null }>): Promise<void> {
-  if (!(await result).rowCount) throw new UserError("You do not have permission to do that, or it no longer exists.");
-}
-
-function text(form: FormData, key: string): string {
-  return String(form.get(key) ?? "").trim();
-}
-
-function optional(form: FormData, key: string): string | null {
-  return text(form, key) || null;
-}
-
-function amount(form: FormData, key: string, label: string): number {
-  try {
-    const cents = parseMoney(text(form, key));
-    if (cents < 0) throw new Error();
-    return cents;
-  } catch {
-    throw new UserError(`Please enter ${label} like 12.50.`);
-  }
-}
+// ERP form actions for sign-in, products, customers and settings. Other areas
+// keep their actions next to their screens (see src/server/act.ts).
 
 // --- Sign in and out --------------------------------------------------------
 
@@ -74,7 +31,7 @@ export async function signOut(): Promise<never> {
 // --- Products ---------------------------------------------------------------
 
 export async function addProduct(slug: string, formData: FormData): Promise<never> {
-  return act(slug, "/products", "Product added.", async (q, companyId) => {
+  return act(slug, "/products", "Product added.", async (q, { company: { id: companyId } }) => {
     const name = text(formData, "name");
     const sku = text(formData, "sku");
     if (!name || !sku) throw new UserError("Please enter a name and a product code.");
@@ -95,7 +52,7 @@ export async function addProduct(slug: string, formData: FormData): Promise<neve
 }
 
 export async function archiveProduct(slug: string, formData: FormData): Promise<never> {
-  return act(slug, "/products", "Product archived.", (q, companyId) =>
+  return act(slug, "/products", "Product archived.", (q, { company: { id: companyId } }) =>
     changed(q("update public.products set archived_at = now() where company_id = $1 and id = $2 and archived_at is null", [companyId, text(formData, "id")])),
   );
 }
@@ -103,7 +60,7 @@ export async function archiveProduct(slug: string, formData: FormData): Promise<
 // --- Customers --------------------------------------------------------------
 
 export async function addCustomer(slug: string, formData: FormData): Promise<never> {
-  return act(slug, "/customers", "Customer added.", async (q, companyId) => {
+  return act(slug, "/customers", "Customer added.", async (q, { company: { id: companyId } }) => {
     const name = text(formData, "name");
     if (!name) throw new UserError("Please enter the customer's name.");
     const currency = text(formData, "currency");
@@ -118,8 +75,29 @@ export async function addCustomer(slug: string, formData: FormData): Promise<nev
   });
 }
 
+export async function updateCustomer(slug: string, id: string, formData: FormData): Promise<never> {
+  return act(slug, `/customers/${id}`, "Customer saved.", async (q, { company: { id: companyId } }) => {
+    const name = text(formData, "name");
+    if (!name) throw new UserError("Please enter the customer's name.");
+    const currency = text(formData, "currency");
+    if (!CURRENCIES.includes(currency as (typeof CURRENCIES)[number])) throw new UserError("Please choose a currency.");
+    const email = optional(formData, "email")?.toLowerCase() ?? null;
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new UserError("Please check the email address.");
+    const limit = text(formData, "credit_limit") ? amount(formData, "credit_limit", "a credit limit") : null;
+    await changed(
+      q(
+        `update public.customers set name = $3, company_name = $4, phone = $5, whatsapp = $6, email = $7, vat_number = $8,
+                currency = $9, credit_limit_cents = $10, notes = $11
+         where company_id = $1 and id = $2 and archived_at is null`,
+        [companyId, id, name, optional(formData, "company_name"), optional(formData, "phone"), optional(formData, "whatsapp"), email,
+         optional(formData, "vat_number"), currency, limit, optional(formData, "notes")],
+      ),
+    );
+  });
+}
+
 export async function archiveCustomer(slug: string, formData: FormData): Promise<never> {
-  return act(slug, "/customers", "Customer archived.", (q, companyId) =>
+  return act(slug, "/customers", "Customer archived.", (q, { company: { id: companyId } }) =>
     changed(q("update public.customers set archived_at = now() where company_id = $1 and id = $2 and archived_at is null", [companyId, text(formData, "id")])),
   );
 }
@@ -127,7 +105,7 @@ export async function archiveCustomer(slug: string, formData: FormData): Promise
 // --- Exchange rates (P4) ----------------------------------------------------
 
 export async function setRate(slug: string, formData: FormData): Promise<never> {
-  return act(slug, "/settings/rates", "Exchange rate saved. New sales use it straight away.", async (q, companyId) => {
+  return act(slug, "/settings/rates", "Exchange rate saved. New sales use it straight away.", async (q, { company: { id: companyId } }) => {
     const currency = text(formData, "currency");
     if (!CURRENCIES.includes(currency as (typeof CURRENCIES)[number])) throw new UserError("Please choose a currency.");
     const raw = text(formData, "rate").replace(/,/g, "");
@@ -140,7 +118,7 @@ export async function setRate(slug: string, formData: FormData): Promise<never> 
 
 export async function setModule(slug: string, formData: FormData): Promise<never> {
   const enabled = text(formData, "enabled") === "true";
-  return act(slug, "/settings/modules", enabled ? "Module switched on." : "Module switched off.", (q, companyId) =>
+  return act(slug, "/settings/modules", enabled ? "Module switched on." : "Module switched off.", (q, { company: { id: companyId } }) =>
     q(
       `insert into public.company_modules (company_id, module_code, enabled) values ($1, $2, $3)
        on conflict (company_id, module_code) do update set enabled = excluded.enabled`,
@@ -151,7 +129,7 @@ export async function setModule(slug: string, formData: FormData): Promise<never
 
 export async function setFeature(slug: string, formData: FormData): Promise<never> {
   const enabled = text(formData, "enabled") === "true";
-  return act(slug, "/settings/modules", enabled ? "Feature switched on." : "Feature switched off.", (q, companyId) =>
+  return act(slug, "/settings/modules", enabled ? "Feature switched on." : "Feature switched off.", (q, { company: { id: companyId } }) =>
     q(
       `insert into public.company_features (company_id, feature_code, enabled) values ($1, $2, $3)
        on conflict (company_id, feature_code) do update set enabled = excluded.enabled`,
@@ -163,7 +141,7 @@ export async function setFeature(slug: string, formData: FormData): Promise<neve
 // --- Branding (P20) ---------------------------------------------------------
 
 export async function saveBranding(slug: string, formData: FormData): Promise<never> {
-  return act(slug, "/settings/branding", "Brand kit saved.", (q, companyId) =>
+  return act(slug, "/settings/branding", "Brand kit saved.", (q, { company: { id: companyId } }) =>
     changed(q(
       `update public.company_branding
        set primary_color = $2, secondary_color = $3, accent_color = $4, font_pair = $5, corner_style = $6, theme_mode = $7

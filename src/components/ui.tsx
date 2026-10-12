@@ -126,3 +126,55 @@ export function Table({ head, children, empty }: { head: ReactNode[]; children: 
 export function Td({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <td className={`px-4 py-2 align-top ${className}`}>{children}</td>;
 }
+
+const TONES = {
+  draft: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
+  ok: "bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200",
+  muted: "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
+  warn: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
+  info: "bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-200",
+} as const;
+
+export function Badge({ tone = "muted", children }: { tone?: keyof typeof TONES; children: ReactNode }) {
+  return <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${TONES[tone]}`}>{children}</span>;
+}
+
+/** Draft / Submitted / Cancelled. */
+export function DocStatusBadge({ status }: { status: number }) {
+  const s = status === 0 ? { tone: "draft" as const, label: "Draft" } : status === 1 ? { tone: "ok" as const, label: "Submitted" } : { tone: "muted" as const, label: "Cancelled" };
+  return <Badge tone={s.tone}>{s.label}</Badge>;
+}
+
+/** Label and value pairs for a record's header. */
+export function Facts({ items }: { items: Array<[string, ReactNode]> }) {
+  return (
+    <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
+      {items.map(([label, value]) => (
+        <div key={label}>
+          <dt className="text-xs uppercase tracking-wide text-zinc-500">{label}</dt>
+          <dd className="mt-0.5 font-medium">{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+export function TextArea({ label, hint, ...props }: { label: string; hint?: string } & ComponentProps<"textarea">) {
+  return (
+    <label className="block text-sm">
+      <span className="mb-1 block font-medium">{label}</span>
+      <textarea className={inputClass} rows={3} {...props} />
+      {hint ? <span className="mt-1 block text-xs text-zinc-500">{hint}</span> : null}
+    </label>
+  );
+}
+
+/** A record page: main content with the activity panel beside it on wide screens. */
+export function RecordLayout({ children, side }: { children: ReactNode; side: ReactNode }) {
+  return (
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="min-w-0 space-y-6">{children}</div>
+      <div className="xl:border-l xl:border-zinc-200 xl:pl-6 dark:xl:border-zinc-800">{side}</div>
+    </div>
+  );
+}
