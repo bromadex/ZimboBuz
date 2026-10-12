@@ -139,7 +139,7 @@ export default async function BillingPage({ params, searchParams }: PageProps<"/
                 <li>{limit(p.max_branches, "branch", "branches")}</li>
               </ul>
               {isCurrent ? (
-                <Badge tone="ok">Your plan</Badge>
+                <p><Badge tone="ok">Your plan</Badge></p>
               ) : (
                 <form action={changePlan.bind(null, slug)}>
                   <input type="hidden" name="plan" value={p.code} />

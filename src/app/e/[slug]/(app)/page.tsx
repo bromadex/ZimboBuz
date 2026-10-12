@@ -54,7 +54,7 @@ function Tile({ label, children, href }: { label: string; children: ReactNode; h
 
 function Amounts({ items, empty = "Nothing yet" }: { items: Array<{ currency: string; cents: string }>; empty?: string }) {
   const shown = items.filter((i) => BigInt(i.cents) !== BigInt(0));
-  if (!shown.length) return <p className="text-2xl font-bold text-zinc-400 tabular-nums">{empty}</p>;
+  if (!shown.length) return <p className="text-lg font-semibold text-zinc-400">{empty}</p>;
   return (
     <>
       {shown.map((i) => (

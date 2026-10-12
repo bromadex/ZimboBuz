@@ -42,7 +42,7 @@ export default async function RolesPage({ params, searchParams }: PageProps<"/e/
                 (select count(*)::int from public.memberships m where m.role_id = r.id and m.status in ('active','invited')) as members,
                 (select count(*)::int from public.role_permissions rp where rp.role_id = r.id) as permissions
          from public.roles r where r.company_id = $1 and r.archived_at is null
-         order by r.is_system desc, r.created_at, r.name`,
+         order by (r.code = 'owner' and r.is_system) desc, r.is_system desc, r.name`,
         [id],
       )
     ).rows;

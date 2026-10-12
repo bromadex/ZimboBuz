@@ -132,7 +132,7 @@ export default async function SecurityPage({ params, searchParams }: PageProps<"
                 Add ZimERP to your authenticator app
               </a>
               . Otherwise choose to enter a setup key and type:
-              <span className="mt-1 block break-all rounded bg-zinc-100 px-2 py-1 font-mono text-base tracking-wider dark:bg-zinc-800" data-testid="totp-secret">
+              <span className="mt-1 block break-words rounded bg-zinc-100 px-2 py-1 font-mono text-base tracking-wider dark:bg-zinc-800" data-testid="totp-secret">
                 {groupSecret(status.pending.secret)}
               </span>
               <span className="text-xs text-zinc-500">Time-based, 6 digits.</span>
