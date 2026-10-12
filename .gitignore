@@ -36,3 +36,5 @@ node_modules/
 docs/pdf-build/_render_*.html
 docs/pdf-build/*.pdf
 .claude/worktrees/
+# local file storage (development and on-premise uploads)
+/.data/

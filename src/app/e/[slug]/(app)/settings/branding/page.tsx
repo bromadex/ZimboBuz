@@ -1,6 +1,7 @@
 import { Button, Card, Field, Notice, PageHeader, SelectField } from "@/components/ui";
 import { requirePermission } from "@/server/company";
 import { saveBranding } from "../../../actions";
+import { LogoAndMotion } from "./logo";
 
 // P20 (first part): colours, fonts, corners and light/dark. The same brand
 // kit will style the website, store, documents and staff apps.
@@ -72,6 +73,7 @@ export default async function BrandingPage({ params, searchParams }: PageProps<"
           </div>
         </Card>
       </div>
+      <LogoAndMotion slug={slug} logoUrl={b.logoUrl} motionLevel={b.motionLevel} />
     </>
   );
 }

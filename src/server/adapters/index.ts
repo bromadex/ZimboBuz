@@ -6,7 +6,7 @@ import { FakeMessenger, WhatsAppCloudMessenger, type Messenger } from "./messagi
 import { FakePaymentGateway } from "./payments/fake";
 import { PaynowGateway } from "./payments/paynow";
 import type { PaymentGateway } from "./payments/types";
-import { MemoryFileStorage, type FileStorage } from "./storage";
+import { FileSystemStorage, MemoryFileStorage, type FileStorage } from "./storage";
 
 // One place that decides which implementation each adapter uses, from
 // environment variables only (no secrets in code). ADAPTERS=fake forces fakes
@@ -45,7 +45,7 @@ export function createAdapters(env: Env = process.env): Adapters {
       () => new WhatsAppCloudMessenger(env.WHATSAPP_ACCESS_TOKEN!, env.WHATSAPP_PHONE_NUMBER_ID!, env.WHATSAPP_API_VERSION),
       () => new FakeMessenger(),
     ),
-    storage: new MemoryFileStorage(),
+    storage: chooseStorage(env, forceFake, missing),
     domains: real<DomainProvider>(
       "domains",
       ["VERCEL_TOKEN", "VERCEL_PROJECT_ID"],
@@ -56,4 +56,17 @@ export function createAdapters(env: Env = process.env): Adapters {
     ai: new FakeAiAssistant(),
     missing,
   };
+}
+
+/**
+ * Files: on disk when STORAGE_DIR is set, or by default in development
+ * (./.data/storage); in memory for tests (ADAPTERS=fake or NODE_ENV=test) and,
+ * with a warning, in production until a storage service is configured.
+ */
+function chooseStorage(env: Env, forceFake: boolean, missing: string[]): FileStorage {
+  if (forceFake || env.NODE_ENV === "test") return new MemoryFileStorage();
+  if (env.STORAGE_DIR) return new FileSystemStorage(env.STORAGE_DIR);
+  if (env.NODE_ENV !== "production") return new FileSystemStorage("./.data/storage");
+  missing.push("storage");
+  return new MemoryFileStorage();
 }

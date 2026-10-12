@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { CurrencyCode } from "@/lib/money";
+import { assetUrl } from "@/lib/site/theme";
 import { currentUserId } from "./auth";
 import { withUser } from "./data";
 import { getPool } from "./db";
@@ -14,6 +15,9 @@ export interface Branding {
   fontPair: "modern" | "classic" | "friendly" | "technical";
   themeMode: "light" | "dark" | "system";
   cornerStyle: "square" | "rounded" | "pill";
+  motionLevel: "off" | "subtle" | "rich";
+  /** Public address of the uploaded logo, if any (P20). */
+  logoUrl: string | null;
 }
 
 export interface CompanyContext {
@@ -62,10 +66,12 @@ export const lookupCompany = cache(async (slug: string): Promise<CompanyLookup> 
       base_currency: CurrencyCode; vat_registered: boolean; prices_include_tax: boolean; role_name: string;
       primary_color: string; secondary_color: string; accent_color: string; font_pair: Branding["fontPair"];
       theme_mode: Branding["themeMode"]; corner_style: Branding["cornerStyle"];
+      motion_level: Branding["motionLevel"]; logo_path: string | null;
     }>(
       `select c.id, c.name, c.slug, c.plan_code, pl.name as plan_name, c.status, c.base_currency,
               c.vat_registered, c.prices_include_tax, r.name as role_name,
-              b.primary_color, b.secondary_color, b.accent_color, b.font_pair, b.theme_mode, b.corner_style
+              b.primary_color, b.secondary_color, b.accent_color, b.font_pair, b.theme_mode, b.corner_style,
+              b.motion_level, b.logo_path
        from public.companies c
        join public.plans pl on pl.code = c.plan_code
        join public.memberships m on m.company_id = c.id and m.user_id = auth.uid()
@@ -117,6 +123,8 @@ export const lookupCompany = cache(async (slug: string): Promise<CompanyLookup> 
         fontPair: row.font_pair ?? "modern",
         themeMode: row.theme_mode ?? "system",
         cornerStyle: row.corner_style ?? "rounded",
+        motionLevel: row.motion_level ?? "subtle",
+        logoUrl: assetUrl(row.logo_path),
       },
     };
   });
