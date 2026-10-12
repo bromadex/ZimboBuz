@@ -1,10 +1,34 @@
-import { Button, Card, Field, Notice, PageHeader, SelectField, Table, Td } from "@/components/ui";
-import { formatMoney } from "@/lib/money";
+import { ListView, type Filter } from "@/components/list-view";
+import { Badge, Button, Card, Field, Notice, PageHeader, SelectField } from "@/components/ui";
+import { currencyLabel, formatQuantity, money } from "@/lib/format";
+import { likePattern, listParams } from "@/lib/list-params";
 import { requirePermission } from "@/server/company";
 import { withUser } from "@/server/data";
-import { addProduct, archiveProduct } from "../../actions";
+import { TAX_LABELS } from "@/server/inventory/data";
+import { addProduct } from "../../actions";
 
-const TAX_LABELS: Record<string, string> = { standard: "Standard VAT", zero_rated: "Zero-rated", exempt: "Exempt" };
+const SORTS = [
+  { value: "name", label: "Name", sql: "p.name, p.sku" },
+  { value: "code", label: "Code", sql: "p.sku" },
+  { value: "newest", label: "Newest", sql: "p.created_at desc" },
+  { value: "price", label: "Highest price", sql: "pp.price_cents desc nulls last, p.name" },
+  { value: "stock", label: "Least stock", sql: "coalesce(s.qty, 0), p.name" },
+];
+
+type Row = {
+  id: string;
+  sku: string;
+  name: string;
+  barcode: string | null;
+  unit: string;
+  tax_code: string;
+  is_stock_item: boolean;
+  avg_cost: string | null;
+  reorder_level: string | null;
+  archived: boolean;
+  price_cents: string | null;
+  qty: string | null;
+};
 
 export default async function ProductsPage({ params, searchParams }: PageProps<"/e/[slug]/products">) {
   const { slug } = await params;
@@ -12,64 +36,106 @@ export default async function ProductsPage({ params, searchParams }: PageProps<"
   const ctx = await requirePermission(slug, "core.products.view");
   const base = ctx.company.baseCurrency;
   const canCreate = ctx.permissions.has("core.products.create");
-  const canEdit = ctx.permissions.has("core.products.edit");
   const canSeeCost = ctx.permissions.has("core.products.view_cost");
+  const canSeeStock = ctx.permissions.has("inventory.view");
+  const lp = listParams(sp, { sorts: canSeeStock ? SORTS : SORTS.slice(0, 4) });
+  const archived = lp.get("archived") === "yes";
+  const kind = lp.get("kind") === "stock" || lp.get("kind") === "service" ? lp.get("kind")! : "";
+  const low = canSeeStock && lp.get("stock") === "low";
 
   // products_v shows cost only to roles allowed to see it (P17).
-  const products = await withUser(ctx.userId, async (q) =>
-    (
-      await q<{ id: string; sku: string; name: string; unit: string; tax_code: string; is_stock_item: boolean; avg_cost: string | null; price_cents: string | null }>(
-        `select p.id, p.sku, p.name, p.unit, p.tax_code, p.is_stock_item, p.avg_cost, pp.price_cents
-         from public.products_v p
-         left join public.product_prices pp on pp.product_id = p.id and pp.currency = $2
-         where p.company_id = $1 and p.archived_at is null
-         order by p.name`,
-        [ctx.company.id, base],
+  const { rows, total } = await withUser(ctx.userId, async (q) => {
+    const from = `from public.products_v p
+      left join public.product_prices pp on pp.product_id = p.id and pp.currency = $2
+      left join lateral (select sum(l.quantity) as qty from public.stock_levels l where l.product_id = p.id) s on true
+      where p.company_id = $1 and (p.archived_at is null) <> $3
+        and ($4 = '' or p.name ilike $5 or p.sku ilike $5 or p.barcode ilike $5)
+        and ($6 = '' or p.is_stock_item = ($6 = 'stock'))
+        and (not $7 or (p.is_stock_item and p.reorder_level is not null and coalesce(s.qty, 0) <= p.reorder_level))`;
+    const args = [ctx.company.id, base, archived, lp.q, likePattern(lp.q), kind, low];
+    const total = Number((await q<{ n: string }>(`select count(*) as n ${from}`, args)).rows[0].n);
+    const rows = (
+      await q<Row>(
+        `select p.id, p.sku, p.name, p.barcode, p.unit, p.tax_code, p.is_stock_item, p.avg_cost, p.reorder_level,
+                p.archived_at is not null as archived, pp.price_cents, s.qty
+         ${from} order by ${lp.sort.sql} limit ${lp.pageSize} offset ${lp.offset}`,
+        args,
       )
-    ).rows,
-  );
+    ).rows;
+    return { rows, total };
+  });
+
+  const isLow = (p: Row) => p.is_stock_item && p.reorder_level !== null && Number(p.qty ?? 0) <= Number(p.reorder_level);
+  const stockCell = (p: Row) =>
+    !p.is_stock_item ? (
+      <span className="text-zinc-500">Service</span>
+    ) : (
+      <span className="whitespace-nowrap">
+        {formatQuantity(p.qty ?? 0)} {p.unit !== "each" ? p.unit : ""} {isLow(p) ? <Badge tone="warn">Low</Badge> : null}
+      </span>
+    );
+
+  const filters: Filter[] = [
+    { name: "kind", label: "Type", options: [{ value: "stock", label: "Stock items" }, { value: "service", label: "Services" }] },
+    ...(canSeeStock ? [{ name: "stock", label: "Stock", options: [{ value: "low", label: "Low stock" }] }] : []),
+    { name: "archived", label: "Archived", options: [{ value: "yes", label: "Archived only" }] },
+  ];
 
   return (
     <>
-      <PageHeader title="Products" description={`Prices are in ${base === "ZWG" ? "ZiG" : base}, your main currency. Other currencies use your exchange rates.`} />
+      <PageHeader
+        title="Products"
+        description={`Prices are in ${currencyLabel(base)}, your main currency. Other currencies use your exchange rates unless you set a price for them on the product.`}
+      />
       <Notice error={sp.error} success={sp.success} />
-      <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
-        <Table
-          head={["Code", "Name", "Price", ...(canSeeCost ? ["Average cost"] : []), "VAT", ""]}
-          empty="No products yet. Add your first one."
-        >
-          {products.map((p) => (
-            <tr key={p.id}>
-              <Td className="whitespace-nowrap font-mono text-xs">{p.sku}</Td>
-              <Td>
-                {p.name}
-                {p.unit !== "each" || !p.is_stock_item ? (
-                  <span className="block text-xs text-zinc-500">
-                    {[p.unit !== "each" ? `per ${p.unit}` : null, p.is_stock_item ? null : "service"].filter(Boolean).join(" · ")}
-                  </span>
-                ) : null}
-              </Td>
-              <Td className="whitespace-nowrap">{p.price_cents === null ? "—" : formatMoney(BigInt(p.price_cents), base)}</Td>
-              {canSeeCost ? (
-                <Td className="whitespace-nowrap">{p.avg_cost === null ? "—" : formatMoney(BigInt(Math.round(Number(p.avg_cost))), base)}</Td>
-              ) : null}
-              <Td>{TAX_LABELS[p.tax_code]}</Td>
-              <Td className="text-right">
-                {canEdit ? (
-                  <form action={archiveProduct.bind(null, slug)}>
-                    <input type="hidden" name="id" value={p.id} />
-                    <button type="submit" className="text-xs font-semibold text-zinc-500 hover:text-red-700">
-                      Archive
-                    </button>
-                  </form>
-                ) : null}
-              </Td>
-            </tr>
-          ))}
-        </Table>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="min-w-0">
+          <ListView<Row>
+            path="/products"
+            sp={sp}
+            params={lp}
+            total={total}
+            rows={rows}
+            sorts={canSeeStock ? SORTS : SORTS.slice(0, 4)}
+            filters={filters}
+            searchLabel="Search by name, code or barcode"
+            href={(p) => `/products/${p.id}`}
+            empty={canCreate ? "No products yet. Add your first one, or import a list from Settings › Import data." : "No products yet."}
+            columns={[
+              { label: "Name", cell: (p) => p.name },
+              { label: "Code", cell: (p) => <span className="font-mono text-xs">{p.sku}</span>, className: "whitespace-nowrap" },
+              { label: "Price", cell: (p) => money(p.price_cents, base), className: "whitespace-nowrap text-right" },
+              ...(canSeeStock ? [{ label: "In stock", cell: stockCell }] : []),
+              ...(canSeeCost
+                ? [{ label: "Average cost", cell: (p: Row) => (p.is_stock_item && p.avg_cost !== null ? money(Math.round(Number(p.avg_cost)), base) : "—"), className: "whitespace-nowrap text-right" }]
+                : []),
+              { label: "VAT", cell: (p) => TAX_LABELS[p.tax_code], className: "whitespace-nowrap" },
+            ]}
+            card={(p) => (
+              <>
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-semibold">{p.name}</p>
+                  <p className="whitespace-nowrap font-semibold tabular-nums text-[var(--brand,#0b6e4f)]">{money(p.price_cents, base)}</p>
+                </div>
+                <p className="mt-1 font-mono text-xs text-zinc-500">
+                  {p.sku}
+                  {p.barcode ? ` · ${p.barcode}` : ""}
+                </p>
+                <p className="mt-3 text-sm">
+                  {canSeeStock ? stockCell(p) : p.is_stock_item ? `Sold per ${p.unit}` : "Service"}
+                  {p.archived ? (
+                    <span className="ml-2">
+                      <Badge>Archived</Badge>
+                    </span>
+                  ) : null}
+                </p>
+              </>
+            )}
+          />
+        </div>
 
         {canCreate ? (
-          <Card title="Add a product">
+          <Card title="Add a product" className="self-start">
             <form action={addProduct.bind(null, slug)} className="space-y-4">
               <Field label="Name" name="name" required placeholder="Cement 50kg" />
               <div className="grid grid-cols-2 gap-3">
@@ -77,7 +143,7 @@ export default async function ProductsPage({ params, searchParams }: PageProps<"
                 <Field label="Barcode" name="barcode" inputMode="numeric" />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Field label={`Price (${base === "ZWG" ? "ZiG" : base})`} name="price" required inputMode="decimal" placeholder="12.50" />
+                <Field label={`Price (${currencyLabel(base)})`} name="price" required inputMode="decimal" placeholder="12.50" />
                 <Field label="Unit" name="unit" defaultValue="each" />
               </div>
               <SelectField
@@ -94,6 +160,7 @@ export default async function ProductsPage({ params, searchParams }: PageProps<"
               <Button type="submit" className="w-full">
                 Add product
               </Button>
+              <p className="text-xs text-zinc-500">Open the product afterwards to add prices in other currencies, a reorder level and a description.</p>
             </form>
           </Card>
         ) : null}
