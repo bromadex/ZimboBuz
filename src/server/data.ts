@@ -60,3 +60,20 @@ export function friendlyError(error: unknown): string {
   if (e?.message?.includes("row-level security")) return "You do not have permission to do that.";
   return "Something went wrong. Please try again.";
 }
+
+/** Runs `fn` as an anonymous website visitor (role anon), as the public site does through Supabase. */
+export async function withAnon<T>(fn: (q: Query) => Promise<T>): Promise<T> {
+  const client = await getPool().connect();
+  try {
+    await client.query("begin");
+    await client.query("set local role anon");
+    const result = await fn((sql, params) => client.query(sql, params));
+    await client.query("commit");
+    return result;
+  } catch (error) {
+    await client.query("rollback").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
