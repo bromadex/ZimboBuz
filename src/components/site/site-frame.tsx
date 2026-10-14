@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { SOCIAL_NETWORKS, siteStyle, whatsAppLink } from "@/lib/site/theme";
+import { SOCIAL_NETWORKS, siteStyle, templateInfo, whatsAppLink } from "@/lib/site/theme";
 import type { SiteView } from "@/server/web/site-data";
 import { CartLink } from "./quote-cart";
 
@@ -14,6 +14,15 @@ export function pageHref(slug: string): string {
 export function initials(name: string): string {
   const words = name.replace(/[^\p{L}\p{N} ]/gu, " ").trim().split(/\s+/).filter(Boolean);
   return ((words[0]?.[0] ?? "") + (words[1]?.[0] ?? "")).toUpperCase() || "•";
+}
+
+/**
+ * Whether the menu links to the shop: always for shop templates, otherwise
+ * only when products are shown online (a church or school without products
+ * has no empty shop in its menu).
+ */
+export function showShopLink(site: SiteView): boolean {
+  return site.features.hasProducts || templateInfo(site.settings.template).shop;
 }
 
 /** The themed root element (brand colours, fonts, corners, light/dark, motion). */
@@ -53,7 +62,7 @@ export function Brand({ site }: { site: SiteView }) {
 export function SiteHeader({ site, current }: { site: SiteView; current?: string }) {
   const links = [
     ...site.menu.map((m) => ({ href: pageHref(m.slug), label: m.title })),
-    { href: "/shop", label: "Shop" },
+    ...(showShopLink(site) ? [{ href: "/shop", label: "Shop" }] : []),
     ...(site.features.portal ? [{ href: "/account", label: "My account" }] : []),
   ];
   // Keep "Contact" last, after the shop, when there is one.
@@ -136,7 +145,7 @@ export function SiteFooter({ site }: { site: SiteView }) {
               <p className="whitespace-pre-line">{s.openingHours}</p>
             ) : (
               <ul className="space-y-1.5">
-                <li><Link href="/shop">Shop</Link></li>
+                {showShopLink(site) ? <li><Link href="/shop">Shop</Link></li> : null}
                 {site.menu.slice(0, 5).map((m) => (
                   <li key={m.slug}><Link href={pageHref(m.slug)}>{m.title}</Link></li>
                 ))}

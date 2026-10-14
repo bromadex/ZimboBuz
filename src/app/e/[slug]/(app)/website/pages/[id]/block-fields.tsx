@@ -1,5 +1,16 @@
 import { Field, SelectField, TextArea } from "@/components/ui";
-import { MAX_GALLERY, MAX_TESTIMONIALS, type Block } from "@/lib/site/blocks";
+import {
+  MAX_EVENTS,
+  MAX_FAQ,
+  MAX_GALLERY,
+  MAX_GIVING_WAYS,
+  MAX_PRICE_GROUPS,
+  MAX_PRICE_ITEMS,
+  MAX_STATS,
+  MAX_TEAM,
+  MAX_TESTIMONIALS,
+  type Block,
+} from "@/lib/site/blocks";
 import { assetUrl } from "@/lib/site/theme";
 
 // Editor form fields for each kind of block (P9). Field names match the
@@ -191,7 +202,124 @@ export function BlockFields({ block, pictures, products }: { block: Block; pictu
           {reveal}
         </div>
       );
+    case "price_list": {
+      // Existing groups plus one empty group; each group shows its items plus one empty row.
+      // While there is room, the first groups each get one empty row.
+      const room = MAX_PRICE_ITEMS - block.groups.reduce((n, g) => n + g.items.length, 0);
+      const groups = rowsWithSpare(block.groups, MAX_PRICE_GROUPS, { title: "", items: [] });
+      return (
+        <div className="space-y-4">
+          <Field label="Heading" name="heading" defaultValue={block.heading} maxLength={160} />
+          <TextArea label="Text" name="text" defaultValue={block.text} maxLength={1000} rows={2} hint="For example: prices in US dollars; we also accept ZWG and EcoCash." />
+          <p className="text-xs text-zinc-500">
+            Up to {MAX_PRICE_GROUPS} groups and {MAX_PRICE_ITEMS} items in all. Save to get another empty row. Rows without a name are left out.
+          </p>
+          {groups.map((g, gi) => {
+            const spare = gi < room ? 1 : 0;
+            const items = [...g.items, ...Array.from({ length: spare }, () => ({ name: "", description: "", price: "" }))];
+            return (
+              <fieldset key={gi} className="space-y-3 rounded-[var(--radius)] border border-zinc-200 p-3 dark:border-zinc-800">
+                <Field label={`Group ${gi + 1} title`} name={`group_title_${gi}`} defaultValue={g.title} maxLength={80} placeholder="Mains, Drinks, Hair, Every term…" hint="Optional." />
+                {items.map((item, i) => (
+                  <div key={i} className="grid gap-3 sm:grid-cols-[1fr_1.4fr_8rem]">
+                    <Field label="Item" name={`item_name_${gi}_${i}`} defaultValue={item.name} maxLength={80} />
+                    <Field label="Description" name={`item_description_${gi}_${i}`} defaultValue={item.description} maxLength={300} />
+                    <Field label="Price" name={`item_price_${gi}_${i}`} defaultValue={item.price} maxLength={40} placeholder="US$5.00" />
+                  </div>
+                ))}
+              </fieldset>
+            );
+          })}
+          {reveal}
+        </div>
+      );
+    }
+    case "events":
+      return (
+        <div className="space-y-4">
+          <Field label="Heading" name="heading" defaultValue={block.heading} maxLength={160} />
+          <TextArea label="Text" name="text" defaultValue={block.text} maxLength={1000} rows={2} />
+          <p className="text-xs text-zinc-500">Up to {MAX_EVENTS}. Rows without a title are left out.</p>
+          {rowsWithSpare(block.items, MAX_EVENTS, { title: "", when: "", place: "", description: "" }).map((e, i) => (
+            <div key={i} className="grid gap-3 rounded-[var(--radius)] border border-zinc-200 p-3 sm:grid-cols-2 dark:border-zinc-800">
+              <Field label={`Title (${i + 1})`} name={`event_title_${i}`} defaultValue={e.title} maxLength={80} placeholder="Sunday service" />
+              <Field label="When" name={`event_when_${i}`} defaultValue={e.when} maxLength={120} placeholder="Sundays, 9:00 to 11:30" />
+              <Field label="Where" name={`event_place_${i}`} defaultValue={e.place} maxLength={80} />
+              <Field label="Description" name={`event_description_${i}`} defaultValue={e.description} maxLength={300} />
+            </div>
+          ))}
+          {reveal}
+        </div>
+      );
+    case "team":
+      return (
+        <div className="space-y-4">
+          <Field label="Heading" name="heading" defaultValue={block.heading} maxLength={160} />
+          <TextArea label="Text" name="text" defaultValue={block.text} maxLength={1000} rows={2} />
+          <p className="text-xs text-zinc-500">Up to {MAX_TEAM} people. Only show people who have agreed. Rows without a name are left out.</p>
+          {rowsWithSpare(block.people, MAX_TEAM, { name: "", role: "", bio: "", image: null }).map((p, i) => (
+            <div key={i} className="grid gap-3 rounded-[var(--radius)] border border-zinc-200 p-3 sm:grid-cols-2 dark:border-zinc-800">
+              <Field label={`Name (${i + 1})`} name={`person_name_${i}`} defaultValue={p.name} maxLength={80} />
+              <Field label="Role" name={`person_role_${i}`} defaultValue={p.role} maxLength={80} placeholder="Head teacher, Senior pastor, Partner…" />
+              <div className="sm:col-span-2">
+                <TextArea label="About them" name={`person_bio_${i}`} defaultValue={p.bio} maxLength={600} rows={2} />
+              </div>
+              <PicturePicker name={`person_image_${i}`} label="Photo" value={p.image} pictures={pictures} />
+            </div>
+          ))}
+          {reveal}
+        </div>
+      );
+    case "faq":
+      return (
+        <div className="space-y-4">
+          <Field label="Heading" name="heading" defaultValue={block.heading} maxLength={160} />
+          <p className="text-xs text-zinc-500">Up to {MAX_FAQ}. Questions without an answer are left out.</p>
+          {rowsWithSpare(block.items, MAX_FAQ, { question: "", answer: "" }).map((f, i) => (
+            <div key={i} className="grid gap-3 rounded-[var(--radius)] border border-zinc-200 p-3 dark:border-zinc-800">
+              <Field label={`Question (${i + 1})`} name={`faq_question_${i}`} defaultValue={f.question} maxLength={300} />
+              <TextArea label="Answer" name={`faq_answer_${i}`} defaultValue={f.answer} maxLength={2000} rows={3} />
+            </div>
+          ))}
+          {reveal}
+        </div>
+      );
+    case "stats":
+      return (
+        <div className="space-y-4">
+          <Field label="Heading" name="heading" defaultValue={block.heading} maxLength={160} hint="Optional." />
+          <p className="text-xs text-zinc-500">Up to {MAX_STATS} numbers. Use real, up-to-date figures.</p>
+          {rowsWithSpare(block.items, MAX_STATS, { value: "", label: "" }).map((st, i) => (
+            <div key={i} className="grid gap-3 rounded-[var(--radius)] border border-zinc-200 p-3 sm:grid-cols-[10rem_1fr] dark:border-zinc-800">
+              <Field label={`Number (${i + 1})`} name={`stat_value_${i}`} defaultValue={st.value} maxLength={20} placeholder="12,000+" />
+              <Field label="What it counts" name={`stat_label_${i}`} defaultValue={st.label} maxLength={80} placeholder="people reached" />
+            </div>
+          ))}
+          {reveal}
+        </div>
+      );
+    case "donate":
+      return (
+        <div className="space-y-4">
+          <Field label="Heading" name="heading" defaultValue={block.heading} maxLength={160} />
+          <TextArea label="Text" name="text" defaultValue={block.text} maxLength={1000} rows={2} />
+          <p className="text-xs text-zinc-500">Ways to give, up to {MAX_GIVING_WAYS}: for example your EcoCash merchant code or bank details. Check them carefully.</p>
+          {rowsWithSpare(block.ways, MAX_GIVING_WAYS, { title: "", detail: "" }).map((w, i) => (
+            <div key={i} className="grid gap-3 rounded-[var(--radius)] border border-zinc-200 p-3 sm:grid-cols-[12rem_1fr] dark:border-zinc-800">
+              <Field label={`Way to give (${i + 1})`} name={`way_title_${i}`} defaultValue={w.title} maxLength={80} placeholder="EcoCash" />
+              <TextArea label="Details" name={`way_detail_${i}`} defaultValue={w.detail} maxLength={300} rows={2} placeholder="Merchant code 123456, reference: your name" />
+            </div>
+          ))}
+          <LinkFields label={block.button_label} link={block.button_link} />
+          {reveal}
+        </div>
+      );
   }
+}
+
+/** The existing rows plus one empty row to fill in, up to `max`. */
+function rowsWithSpare<T>(rows: T[], max: number, empty: T): T[] {
+  return rows.length < max ? [...rows, empty] : rows.slice(0, max);
 }
 
 export function blockSummary(block: Block): string {

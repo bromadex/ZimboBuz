@@ -5,7 +5,42 @@ export type FontPair = "modern" | "classic" | "friendly" | "technical";
 export type CornerStyle = "square" | "rounded" | "pill";
 export type ThemeMode = "light" | "dark" | "system";
 export type MotionLevel = "off" | "subtle" | "rich";
-export type Template = "classic" | "bold";
+
+export const TEMPLATE_CODES = ["classic", "bold", "showcase", "menu", "boutique", "ministry", "cause", "academy", "consult"] as const;
+export type Template = (typeof TEMPLATE_CODES)[number];
+
+export interface TemplateInfo {
+  code: Template;
+  label: string;
+  description: string;
+  /** Industry codes (public.industries) the template suits best. */
+  industries: readonly string[];
+  /** True when the site is mainly a shop: its menu always links to /shop. */
+  shop: boolean;
+  /** True when a hero without a picture still shows a decorative panel beside the text. */
+  heroArt: boolean;
+}
+
+/** The website looks a company can choose (site_settings.template). */
+export const TEMPLATES: readonly TemplateInfo[] = [
+  { code: "classic", label: "Classic", description: "Light, calm and refined. Suits almost any business.", industries: ["pharmacy", "other"], shop: true, heroArt: true },
+  { code: "bold", label: "Bold", description: "Big type and strong colour for shops that want to stand out.", industries: ["retail", "auto"], shop: true, heroArt: false },
+  { code: "showcase", label: "Showcase", description: "Large pictures and wide cards to show off products and projects.", industries: ["hardware", "wholesale", "agriculture", "mining_construction"], shop: true, heroArt: true },
+  { code: "menu", label: "Menu", description: "Warm and elegant, with a price list that reads like a menu.", industries: ["restaurant", "hospitality", "salon"], shop: false, heroArt: true },
+  { code: "boutique", label: "Boutique", description: "Minimal, with plenty of white space and square product pictures.", industries: ["online_store"], shop: true, heroArt: false },
+  { code: "ministry", label: "Ministry", description: "Calm and welcoming, with service times and giving up front.", industries: ["church"], shop: false, heroArt: false },
+  { code: "cause", label: "Cause", description: "Strong colour bands and big numbers to tell your story and raise funds.", industries: ["ngo"], shop: false, heroArt: false },
+  { code: "academy", label: "Academy", description: "Structured and tidy, with a crest-like mark. Made for schools and colleges.", industries: ["school"], shop: false, heroArt: true },
+  { code: "consult", label: "Consult", description: "Corporate and clean, with a two-column opening and clear services.", industries: ["professional"], shop: false, heroArt: true },
+];
+
+export function isTemplate(value: unknown): value is Template {
+  return TEMPLATE_CODES.includes(value as Template);
+}
+
+export function templateInfo(code: Template): TemplateInfo {
+  return TEMPLATES.find((t) => t.code === code) ?? TEMPLATES[0];
+}
 
 export interface SiteBranding {
   primaryColor: string;
