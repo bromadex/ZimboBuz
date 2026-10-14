@@ -101,7 +101,7 @@ export async function createTestDb(): Promise<Db> {
 export async function createCompanyAs(
   db: Db,
   userId: string,
-  opts: { name?: string; slug?: string; plan?: string; modules?: string[] } = {},
+  opts: { name?: string; slug?: string; plan?: string; modules?: string[]; industry?: string; sampleItems?: boolean } = {},
 ): Promise<string> {
   const slug = opts.slug ?? `co-${randomUUID().slice(0, 8)}`;
   await db.admin.query("begin");
@@ -109,8 +109,8 @@ export async function createCompanyAs(
     await db.admin.query("set local role authenticated");
     await db.admin.query("select set_config('request.jwt.claim.sub', $1, true)", [userId]);
     const { rows } = await db.admin.query<{ id: string }>(
-      "select public.create_company($1, $2, $3, $4) as id",
-      [opts.name ?? slug, slug, opts.plan ?? "business", opts.modules ?? ["pos", "sales", "inventory"]],
+      "select public.create_company($1, $2, $3, $4, 'USD', $5, $6) as id",
+      [opts.name ?? slug, slug, opts.plan ?? "business", opts.modules ?? ["pos", "sales", "inventory"], opts.industry ?? null, opts.sampleItems ?? false],
     );
     await db.admin.query("commit");
     return rows[0].id;
