@@ -36,7 +36,9 @@ export default async function NotificationsPage({ params, searchParams }: PagePr
     ).rows,
   }));
   // Permission checked above; the preview reads this company's figures as the server.
-  const preview = summaryText(await collectSummary(getPool(), ctx.company.id, harareDate(new Date())));
+  // Sales figures only for people who may see sales.
+  const canSeeFigures = ctx.permissions.has("sales.view") || ctx.permissions.has("reports.view");
+  const preview = canSeeFigures ? summaryText(await collectSummary(getPool(), ctx.company.id, harareDate(new Date()))) : null;
 
   return (
     <>
@@ -70,9 +72,13 @@ export default async function NotificationsPage({ params, searchParams }: PagePr
 
         <div className="space-y-6">
           <Card title="Today's message so far">
-            <pre className="whitespace-pre-wrap break-words rounded-[var(--radius,0.5rem)] bg-emerald-50 p-3 font-sans text-sm text-zinc-800 dark:bg-emerald-950 dark:text-zinc-100">
-              {preview}
-            </pre>
+            {preview ? (
+              <pre className="whitespace-pre-wrap break-words rounded-[var(--radius,0.5rem)] bg-emerald-50 p-3 font-sans text-sm text-zinc-800 dark:bg-emerald-950 dark:text-zinc-100">
+                {preview}
+              </pre>
+            ) : (
+              <p className="text-sm text-zinc-500">The message includes sales figures, which your role does not show.</p>
+            )}
           </Card>
           <Card title="Recently sent">
             {runs.length ? (
