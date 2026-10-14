@@ -189,4 +189,12 @@ describe("starter pages", () => {
       db.asUser(owner, (q) => q("select app.site_starter_pages('church', 'x')")),
     ).rejects.toThrow(/permission denied/);
   });
+
+  it("keeps placeholder impact numbers in the draft, not on the live site", async () => {
+    const { pages } = await siteFor("ngo", "numbers-ngo");
+    const home = pages.find((p) => p.slug === "home")!;
+    const types = (blocks: unknown) => (blocks as Array<{ type: string }>).map((b) => b.type);
+    expect(types(home.blocks)).toContain("stats");
+    expect(types(home.published_blocks)).not.toContain("stats");
+  });
 });

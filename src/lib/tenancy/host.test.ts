@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allowsArea, cachedLookup, canonicalHost, classifyHost, databaseLookup, normaliseHost, type SiteRecord } from "./host";
+import { allowsArea, cachedLookup, canonicalHost, classifyHost, databaseLookup, normaliseHost, storedLookupHost, type SiteRecord } from "./host";
 
 const P = "zimerp.co.zw";
 
@@ -87,5 +87,17 @@ describe("databaseLookup", () => {
     }));
     expect(await lookup("mhofu.co.zw")).toEqual({ companySlug: "mhofu", kind: "website", companyName: "Mhofu", siteHost: "www.mhofu.co.zw", erpHost: null });
     expect(await databaseLookup(async () => ({ rows: [] }))("x.co.zw")).toBeNull();
+  });
+});
+
+describe("staging platform domains", () => {
+  it("looks free addresses up in their stored form and forwards within the staging domain", () => {
+    const t = classifyHost("grace.zimerp.test:3100", "zimerp.test") as Extract<ReturnType<typeof classifyHost>, { kind: "tenant" }>;
+    expect(storedLookupHost(t, "zimerp.test")).toBe("grace.zimerp.co.zw");
+    const record = { companySlug: "grace", kind: "website" as const, companyName: "Grace", siteHost: "grace.zimerp.co.zw" };
+    expect(canonicalHost(record, t, "grace.zimerp.test:3100", "zimerp.test")).toBeNull();
+    const custom = classifyHost("www.grace.org.zw", "zimerp.test") as Extract<ReturnType<typeof classifyHost>, { kind: "tenant" }>;
+    expect(storedLookupHost(custom, "zimerp.test")).toBe("www.grace.org.zw");
+    expect(canonicalHost(record, custom, "www.grace.org.zw", "zimerp.test")).toBe("grace.zimerp.test");
   });
 });

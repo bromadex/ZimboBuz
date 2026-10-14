@@ -13,7 +13,7 @@ create table public.industries (
   suggested_features  jsonb not null default '{}'::jsonb,   -- {"feature_code": true|false}
   website_template    text not null,
   terms               jsonb not null default '{}'::jsonb,   -- {"customer": "Member", "customers": "Members", ...}
-  starter_items       jsonb not null default '[]'::jsonb    -- [{"sku","name","price" (USD cents),"unit","stock","tax"}]
+  starter_items       jsonb not null default '[]'::jsonb    -- [{"sku","name","price" (USD cents),"unit","stock","tax","online"}]
 );
 
 alter table public.industries enable row level security;
@@ -47,17 +47,17 @@ insert into public.industries (code, name, description, sort_order, suggested_mo
   ('mining_construction', 'Mining or construction', 'Quotes and invoices for contracts, stock on sites and a portal for clients.', 9,
    array['sales','inventory','portal','website'], '{"sales.credit_book": true}', 'showcase', '{"customer":"Client","customers":"Clients"}', '[]'),
   ('professional', 'Professional services or consultancy', 'Quotes, invoices, statements and a portal where clients see and pay their invoices.', 10,
-   array['sales','portal','website'], '{"sales.credit_book": true}', 'consult', '{"customer":"Client","customers":"Clients","product":"Service","products":"Services"}',
-   '[{"sku":"CONSULT-HR","name":"Consulting (per hour)","price":5000,"unit":"hour"},{"sku":"RETAINER","name":"Monthly retainer","price":50000,"unit":"month"}]'),
+   array['sales','portal','website'], '{"sales.credit_book": true, "website.add_to_quote": false}', 'consult', '{"customer":"Client","customers":"Clients","product":"Service","products":"Services"}',
+   '[{"online":false,"sku":"CONSULT-HR","name":"Consulting (per hour)","price":5000,"unit":"hour"},{"online":false,"sku":"RETAINER","name":"Monthly retainer","price":50000,"unit":"month"}]'),
   ('school', 'School or college', 'Fees invoiced per term, payments in any currency, statements and a parent portal.', 11,
-   array['sales','portal','website'], '{"sales.credit_book": true, "sales.quotes": false}', 'academy', '{"customer":"Parent or learner","customers":"Parents and learners","product":"Fee","products":"Fees"}',
-   '[{"sku":"TUITION-T1","name":"Tuition fees (term)","price":30000,"unit":"term"},{"sku":"LEVY","name":"Development levy","price":5000,"unit":"term"},{"sku":"UNIFORM","name":"School uniform","price":4500,"stock":true}]'),
+   array['sales','portal','website'], '{"sales.credit_book": true, "sales.quotes": false, "website.add_to_quote": false}', 'academy', '{"customer":"Parent or learner","customers":"Parents and learners","product":"Fee","products":"Fees"}',
+   '[{"online":false,"sku":"TUITION-T1","name":"Tuition fees (term)","price":30000,"unit":"term"},{"online":false,"sku":"LEVY","name":"Development levy","price":5000,"unit":"term"},{"sku":"UNIFORM","name":"School uniform","price":4500,"stock":true}]'),
   ('church', 'Church or ministry', 'Record tithes, offerings and pledges in any currency, give members statements and run a welcoming website.', 12,
-   array['sales','website'], '{"sales.quotes": false}', 'ministry', '{"customer":"Member","customers":"Members","product":"Giving type","products":"Giving types","invoice":"Pledge","invoices":"Pledges"}',
-   '[{"sku":"TITHE","name":"Tithe","tax":"exempt"},{"sku":"OFFERING","name":"Offering","tax":"exempt"},{"sku":"BUILDING","name":"Building fund","tax":"exempt"}]'),
+   array['sales','website'], '{"sales.quotes": false, "website.add_to_quote": false}', 'ministry', '{"customer":"Member","customers":"Members","product":"Giving type","products":"Giving types","invoice":"Pledge","invoices":"Pledges"}',
+   '[{"online":false,"sku":"TITHE","name":"Tithe","tax":"exempt"},{"online":false,"sku":"OFFERING","name":"Offering","tax":"exempt"},{"online":false,"sku":"BUILDING","name":"Building fund","tax":"exempt"}]'),
   ('ngo', 'NGO or non-profit', 'Record donations and grants, thank donors with receipts and tell your story on your website.', 13,
-   array['sales','website'], '{"sales.quotes": false}', 'cause', '{"customer":"Donor","customers":"Donors","product":"Fund","products":"Funds"}',
-   '[{"sku":"GENERAL","name":"General donation","tax":"exempt"},{"sku":"PROGRAMME","name":"Programme support","tax":"exempt"}]'),
+   array['sales','website'], '{"sales.quotes": false, "website.add_to_quote": false}', 'cause', '{"customer":"Donor","customers":"Donors","product":"Fund","products":"Funds"}',
+   '[{"online":false,"sku":"GENERAL","name":"General donation","tax":"exempt"},{"online":false,"sku":"PROGRAMME","name":"Programme support","tax":"exempt"}]'),
   ('auto', 'Garage or auto parts', 'Job cards as quotes and invoices, parts stock and till sales.', 14,
    array['pos','sales','inventory','website'], '{}', 'bold', '{}',
    '[{"sku":"SERVICE","name":"Minor service (labour)","price":4000},{"sku":"OIL-5W30","name":"Engine oil 5W-30 (5L)","price":3500,"stock":true}]'),
@@ -158,7 +158,8 @@ begin
       for v_item in select * from jsonb_array_elements(v_ind.starter_items) loop
         insert into public.products (company_id, sku, name, unit, is_stock_item, tax_code, show_online)
         values (v_company, v_item->>'sku', v_item->>'name', coalesce(v_item->>'unit', 'each'),
-                coalesce((v_item->>'stock')::boolean, false), coalesce(v_item->>'tax', 'standard'), true)
+                coalesce((v_item->>'stock')::boolean, false), coalesce(v_item->>'tax', 'standard'),
+                coalesce((v_item->>'online')::boolean, true))
         returning id into v_prod;
         if p_base_currency = 'USD' and (v_item->>'price') is not null then
           insert into public.product_prices (company_id, product_id, currency, price_cents)

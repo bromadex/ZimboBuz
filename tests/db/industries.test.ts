@@ -35,9 +35,10 @@ describe("industries", () => {
     const c = (await db.admin.query("select industry_code from public.companies where id = $1", [company])).rows[0];
     expect(c.industry_code).toBe("church");
     expect((await db.admin.query("select app.feature_on($1, 'sales.quotes') as on", [company])).rows[0].on).toBe(false);
-    const items = (await db.admin.query("select sku, tax_code, is_stock_item from public.products where company_id = $1 order by sku", [company])).rows;
+    const items = (await db.admin.query("select sku, tax_code, is_stock_item, show_online from public.products where company_id = $1 order by sku", [company])).rows;
     expect(items.map((i) => i.sku)).toEqual(["BUILDING", "OFFERING", "TITHE"]);
-    expect(items.every((i) => i.tax_code === "exempt" && !i.is_stock_item)).toBe(true);
+    expect(items.every((i) => i.tax_code === "exempt" && !i.is_stock_item && !i.show_online)).toBe(true);
+    expect((await db.admin.query("select app.feature_on($1, 'website.add_to_quote') as on", [company])).rows[0].on).toBe(false);
     const terms = await db.asUser(owner, (q) => q("select public.company_terms($1) as t", [company]));
     expect(terms.rows[0].t.customers).toBe("Members");
   });

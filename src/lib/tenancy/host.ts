@@ -46,6 +46,15 @@ export function classifyHost(rawHost: string | null | undefined, platformDomain:
   return { kind: "tenant", area: host.startsWith("erp.") ? "erp" : "site", lookupHost: host, custom: true };
 }
 
+/** The platform domain ZimERP addresses are recorded under (public.create_company). */
+export const STORED_PLATFORM = "zimerp.co.zw";
+
+/** The hostname to look up for a request: free addresses use their stored form. */
+export function storedLookupHost(target: Extract<HostTarget, { kind: "tenant" }>, platformDomain: string): string {
+  if (target.custom) return target.lookupHost;
+  return `${target.lookupHost.slice(0, -(platformDomain.length + 1))}.${STORED_PLATFORM}`;
+}
+
 export interface SiteRecord {
   companySlug: string;
   kind: "website" | "store" | "erp";
@@ -68,11 +77,15 @@ export function canonicalHost(
   platformDomain: string,
 ): string | null {
   const host = normaliseHost(requestHost);
+  const platform = platformDomain.toLowerCase();
   if (target.area === "site") {
-    const main = record.siteHost ?? null;
+    // Free addresses are stored as <slug>.zimerp.co.zw; on a staging domain
+    // they live under that domain instead.
+    const stored = record.siteHost ?? null;
+    const main = stored?.endsWith(`.${STORED_PLATFORM}`) ? `${stored.slice(0, -STORED_PLATFORM.length)}${platform}` : stored;
     return main && main !== host ? main : null;
   }
-  const main = record.erpHost ?? (target.custom ? `erp.${record.companySlug}.${platformDomain.toLowerCase()}` : null);
+  const main = record.erpHost ?? (target.custom ? `erp.${record.companySlug}.${platform}` : null);
   return main && main !== host ? main : null;
 }
 

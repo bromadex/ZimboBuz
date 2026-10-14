@@ -6,6 +6,7 @@ import {
   canonicalHost,
   classifyHost,
   databaseLookup,
+  storedLookupHost,
   devLookup,
   supabaseLookup,
   type SiteLookup,
@@ -82,7 +83,7 @@ export async function proxy(request: NextRequest) {
   // ZimERP addresses are routed by their slug even when the lookup finds no
   // live domain (a suspended company must still reach its ERP to pay); own
   // domains must be connected and verified.
-  const found = await lookup(target.lookupHost);
+  const found = await lookup(storedLookupHost(target, platformDomain));
   const site =
     found ?? (target.custom ? null : { companySlug: target.lookupHost.slice(0, -(platformDomain.length + 1)), kind: "website" as const, companyName: "" });
   if (!site || !allowsArea(site, target)) return notFound();

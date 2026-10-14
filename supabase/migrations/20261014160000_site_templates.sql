@@ -123,10 +123,10 @@ begin
          "button_label": "Donate now", "button_link": "/donate", "secondary_label": "See our work", "secondary_link": "/our-work"},
         {"id": "impact", "type": "stats", "reveal": "fade-up", "heading": "Our impact so far",
          "items": [
-           {"value": "12,000+", "label": "people reached"},
-           {"value": "35", "label": "communities served"},
-           {"value": "10", "label": "years of service"},
-           {"value": "100%", "label": "of gifts accounted for"}
+           {"value": "?", "label": "people reached"},
+           {"value": "?", "label": "communities served"},
+           {"value": "?", "label": "years of service"},
+           {"value": "?", "label": "of gifts accounted for"}
          ]},
         {"id": "about", "type": "text", "reveal": "fade-up", "align": "center", "heading": "Who we are",
          "body": "{company} is a registered non-profit organisation. We listen to the communities we serve and work with local leaders, schools and clinics to bring lasting change.\n\nUpdate these numbers and words with your own story."},
@@ -168,9 +168,9 @@ begin
          "button_label": "Admissions", "button_link": "/admissions", "secondary_label": "School fees", "secondary_link": "/fees"},
         {"id": "numbers", "type": "stats", "reveal": "fade-up", "heading": "",
          "items": [
-           {"value": "1:25", "label": "teacher to learner ratio"},
-           {"value": "98%", "label": "pass rate"},
-           {"value": "20+", "label": "sports and clubs"}
+           {"value": "?", "label": "teacher to learner ratio"},
+           {"value": "?", "label": "pass rate"},
+           {"value": "?", "label": "sports and clubs"}
          ]},
         {"id": "about", "type": "image_text", "reveal": "fade-up", "image_side": "right", "heading": "About our school",
          "body": "{company} offers a broad education following the Zimbabwe curriculum, with strong results, sport, music and clubs. Our teachers know every learner by name and work closely with parents.",
@@ -225,9 +225,9 @@ begin
          "button_label": "Book a consultation", "button_link": "/contact", "secondary_label": "Our services", "secondary_link": "/services"},
         {"id": "numbers", "type": "stats", "reveal": "fade-up", "heading": "",
          "items": [
-           {"value": "15+", "label": "years of experience"},
-           {"value": "200+", "label": "clients served"},
-           {"value": "24 h", "label": "reply to every enquiry"}
+           {"value": "?", "label": "years of experience"},
+           {"value": "?", "label": "clients served"},
+           {"value": "?", "label": "reply to every enquiry"}
          ]},
         {"id": "approach", "type": "image_text", "reveal": "fade-up", "image_side": "right", "heading": "How we work",
          "body": "We start by listening. Then we agree a clear scope and fee in writing, keep you informed at every step and deliver on time.",
@@ -270,9 +270,9 @@ begin
          "button_label": "Request a quote", "button_link": "/contact", "secondary_label": "Our services", "secondary_link": "/services"},
         {"id": "numbers", "type": "stats", "reveal": "fade-up", "heading": "",
          "items": [
-           {"value": "120+", "label": "projects completed"},
-           {"value": "0", "label": "lost-time injuries this year"},
-           {"value": "20", "label": "years in business"}
+           {"value": "?", "label": "projects completed"},
+           {"value": "?", "label": "lost-time injuries this year"},
+           {"value": "?", "label": "years in business"}
          ]},
         {"id": "about", "type": "image_text", "reveal": "fade-up", "image_side": "right", "heading": "Why clients choose us",
          "body": "Experienced engineers, our own plant and equipment, and a firm commitment to safety and quality on every site."},
@@ -440,7 +440,12 @@ begin
     insert into public.site_pages (company_id, slug, title, nav_order, show_in_menu, blocks,
                                    published_title, published_blocks, published_at, published_by)
     values (p_company, v_page->>'slug', v_page->>'title', (v_page->>'nav_order')::integer, true, v_page->'blocks',
-            v_page->>'title', v_page->'blocks', now(), auth.uid());
+            v_page->>'title',
+            -- Impact numbers start as "?" for the company to fill in, so they
+            -- stay in the draft and are not published until edited.
+            coalesce((select jsonb_agg(b order by n) from jsonb_array_elements(v_page->'blocks') with ordinality as e(b, n)
+                      where b->>'type' <> 'stats'), '[]'::jsonb),
+            now(), auth.uid());
   end loop;
 end;
 $$;
