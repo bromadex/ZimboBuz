@@ -47,6 +47,57 @@ export const NAV: NavGroup[] = [
       { href: "/settings/domains", label: "Domains", anyOf: ["admin.domains.manage"] },
     ],
   },
+  {
+    label: "Grow",
+    items: [
+      { href: "/crm", label: "CRM pipeline", anyOf: ["crm.view"] },
+      { href: "/crm/campaigns", label: "Campaigns", anyOf: ["crm.view"] },
+      { href: "/projects", label: "Projects", anyOf: ["projects.view"] },
+      { href: "/helpdesk", label: "Helpdesk", anyOf: ["helpdesk.view"] },
+      { href: "/subscriptions", label: "Subscriptions", anyOf: ["subscriptions.view"] },
+      { href: "/signatures", label: "E-signatures", anyOf: ["esign.view"] },
+    ],
+  },
+  {
+    label: "Operate",
+    items: [
+      { href: "/manufacturing", label: "Manufacturing", anyOf: ["manufacturing.view"] },
+      { href: "/maintenance", label: "Assets and maintenance", anyOf: ["maintenance.view"] },
+      { href: "/field-service", label: "Field service", anyOf: ["field_service.view"] },
+      { href: "/rental", label: "Rental", anyOf: ["rental.view"] },
+      { href: "/fleet", label: "Fleet and fuel", anyOf: ["fleet.view"] },
+    ],
+  },
+  {
+    label: "Engage",
+    items: [
+      { href: "/appointments", label: "Appointments", anyOf: ["appointments.view"] },
+      { href: "/events", label: "Events and tickets", anyOf: ["events.view"] },
+      { href: "/surveys", label: "Surveys and forms", anyOf: ["surveys.view"] },
+      { href: "/learning", label: "eLearning", anyOf: ["elearning.view"] },
+    ],
+  },
+  {
+    label: "Industry",
+    items: [
+      { href: "/mining", label: "Mining and construction", anyOf: ["mining.view"] },
+      { href: "/clinic", label: "Clinic", anyOf: ["healthcare.view"] },
+      { href: "/loans", label: "Loans", anyOf: ["microfinance.view"] },
+      { href: "/restaurant", label: "Restaurant", anyOf: ["hospitality.view"] },
+      { href: "/garage", label: "Garage", anyOf: ["garage.view"] },
+      { href: "/farm", label: "Farm", anyOf: ["farming.view"] },
+    ],
+  },
+  {
+    label: "Intelligence",
+    items: [
+      { href: "/ai", label: "Ask AI", anyOf: ["ai.view"] },
+      { href: "/ai/capture", label: "Read receipts and bills", anyOf: ["ai.view"] },
+      { href: "/ai/forecasts", label: "Forecasts", anyOf: ["ai.view"] },
+      { href: "/ai/benchmarks", label: "Benchmarks", anyOf: ["ai.view"] },
+      { href: "/iot", label: "Devices and sensors", anyOf: ["iot.view"] },
+    ],
+  },
   { label: "Reports", items: [{ href: "/reports", label: "Reports", anyOf: ["reports.view"] }] },
   {
     label: "Settings",
@@ -60,6 +111,8 @@ export const NAV: NavGroup[] = [
       { href: "/settings/payments", label: "Payment gateways", anyOf: ["admin.company.edit"] },
       { href: "/settings/notifications", label: "Notifications", anyOf: ["admin.company.edit"] },
       { href: "/settings/import", label: "Import data", anyOf: ["core.products.create", "core.customers.create"] },
+      { href: "/settings/studio", label: "Studio (custom fields)", anyOf: ["studio.manage"] },
+      { href: "/settings/api", label: "API and webhooks", anyOf: ["api.manage"] },
       { href: "/settings/billing", label: "Subscription", anyOf: ["admin.billing.manage"] },
       { href: "/settings/audit", label: "Audit log", anyOf: ["admin.audit.view"] },
     ],
