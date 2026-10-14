@@ -50,6 +50,30 @@ export interface SiteRecord {
   companySlug: string;
   kind: "website" | "store" | "erp";
   companyName: string;
+  /** The company's main website address (its own domain once made main). */
+  siteHost?: string | null;
+  /** The company's main ERP address on its own domain, if it has one. */
+  erpHost?: string | null;
+}
+
+/**
+ * Where to send a visitor who reached a company on an address that is not its
+ * main one (the free ZimERP address after the company made its own domain
+ * main, the bare domain when www is main, and so on). Null: stay.
+ */
+export function canonicalHost(
+  record: SiteRecord,
+  target: Extract<HostTarget, { kind: "tenant" }>,
+  requestHost: string,
+  platformDomain: string,
+): string | null {
+  const host = normaliseHost(requestHost);
+  if (target.area === "site") {
+    const main = record.siteHost ?? null;
+    return main && main !== host ? main : null;
+  }
+  const main = record.erpHost ?? (target.custom ? `erp.${record.companySlug}.${platformDomain.toLowerCase()}` : null);
+  return main && main !== host ? main : null;
 }
 
 export type SiteLookup = (hostname: string) => Promise<SiteRecord | null>;
@@ -82,9 +106,22 @@ export function supabaseLookup(supabaseUrl: string, anonKey: string, fetchImpl: 
       body: JSON.stringify({ p_hostname: hostname }),
     });
     if (!res.ok) throw new Error(`site lookup failed with HTTP ${res.status}`);
-    const rows = (await res.json()) as Array<{ company_slug: string; kind: SiteRecord["kind"]; company_name: string }>;
-    const row = rows[0];
-    return row ? { companySlug: row.company_slug, kind: row.kind, companyName: row.company_name } : null;
+    const rows = (await res.json()) as ResolvedRow[];
+    return rows[0] ? fromRow(rows[0]) : null;
+  };
+}
+
+type ResolvedRow = { company_slug: string; kind: SiteRecord["kind"]; company_name: string; site_host: string | null; erp_host: string | null };
+
+function fromRow(row: ResolvedRow): SiteRecord {
+  return { companySlug: row.company_slug, kind: row.kind, companyName: row.company_name, siteHost: row.site_host, erpHost: row.erp_host };
+}
+
+/** Looks hostnames up directly in PostgreSQL (public.resolve_site), before Supabase is connected. */
+export function databaseLookup(query: (sql: string, params: unknown[]) => Promise<{ rows: unknown[] }>): SiteLookup {
+  return async (hostname) => {
+    const { rows } = await query("select * from public.resolve_site($1)", [hostname]);
+    return rows[0] ? fromRow(rows[0] as ResolvedRow) : null;
   };
 }
 

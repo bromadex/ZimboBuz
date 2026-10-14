@@ -31,6 +31,8 @@ export interface SiteView {
   pricesIncludeTax: boolean;
   vatRegistered: boolean;
   live: boolean;
+  /** Show "Website by ZimERP" in the footer (higher plans may hide it). */
+  platformBadge: boolean;
   branding: SiteBranding;
   settings: SiteSettings;
   menu: Array<{ slug: string; title: string }>;
@@ -116,6 +118,7 @@ export const publicSite = cache(async (slug: string): Promise<SiteView | null> =
   if (!b) return null;
   const company = b.company as Json;
   const features = (b.features ?? {}) as Json;
+  const platformBadge = await withAnon(async (q) => (await q<{ v: boolean }>("select public.site_platform_badge($1) as v", [slug])).rows[0]?.v ?? true);
   return {
     slug: String(company.slug),
     companyName: String(company.name),
@@ -123,6 +126,7 @@ export const publicSite = cache(async (slug: string): Promise<SiteView | null> =
     pricesIncludeTax: company.prices_include_tax !== false,
     vatRegistered: company.vat_registered === true,
     live: b.live === true,
+    platformBadge,
     branding: toBranding((b.branding ?? {}) as Json),
     settings: toSettings(b.settings as Json),
     menu: ((b.menu as Array<{ slug: string; title: string }>) ?? []).map((m) => ({ slug: m.slug, title: m.title })),
@@ -182,6 +186,7 @@ export async function previewSite(ctx: CompanyContext): Promise<SiteView> {
       pricesIncludeTax: ctx.company.pricesIncludeTax,
       vatRegistered: ctx.company.vatRegistered,
       live: true,
+      platformBadge: (await q<{ v: boolean }>("select public.site_platform_badge($1) as v", [ctx.company.slug])).rows[0]?.v ?? true,
       branding: toBranding(branding),
       settings: toSettings(settings ?? {}),
       menu,

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { Badge, Button, Card, Field, Notice, PageHeader, SelectField, TextArea } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
@@ -7,7 +6,7 @@ import { BLOCK_INFO, BLOCK_TYPES, cleanBlocks } from "@/lib/site/blocks";
 import { assetUrl } from "@/lib/site/theme";
 import { requirePermission } from "@/server/company";
 import { withUser } from "@/server/data";
-import { platformDomain, requestProtocol, siteOrigin } from "@/server/urls";
+import { companyOrigins } from "@/server/domains";
 import {
   addBlock,
   archivePage,
@@ -69,8 +68,7 @@ export default async function PageEditor({ params, searchParams }: PageProps<"/e
   const page = data.page;
   const blocks = cleanBlocks(page.blocks, ctx.company.id);
   const back = `/website/pages/${id}`;
-  const h = await headers();
-  const liveUrl = `${siteOrigin(slug, platformDomain(), h.get("host"), requestProtocol(h.get("x-forwarded-proto")))}${page.slug === "home" ? "/" : `/${page.slug}`}`;
+  const liveUrl = `${(await companyOrigins(slug)).site}${page.slug === "home" ? "/" : `/${page.slug}`}`;
   const previewSrc = `/site-preview/${id}?v=${new Date(page.updated_at).getTime()}`;
   const pictures: Picture[] = data.pictures.map((p) => ({ key: p.key, name: p.name }));
 

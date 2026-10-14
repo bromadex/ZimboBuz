@@ -1,6 +1,8 @@
 import { Button, Card, Field, Notice, PageHeader, SelectField } from "@/components/ui";
 import { requirePermission } from "@/server/company";
+import { withUser } from "@/server/data";
 import { saveBranding } from "../../../actions";
+import { setPlatformBadge } from "./actions";
 import { LogoAndMotion } from "./logo";
 
 // P20 (first part): colours, fonts, corners and light/dark. The same brand
@@ -11,6 +13,17 @@ export default async function BrandingPage({ params, searchParams }: PageProps<"
   const sp = await searchParams;
   const ctx = await requirePermission(slug, "admin.branding.edit");
   const b = ctx.branding;
+  const badge = await withUser(ctx.userId, async (q) =>
+    (
+      await q<{ show: boolean | null; can_hide: boolean }>(
+        `select s.show_platform_badge as show, p.can_hide_platform_badge as can_hide
+         from public.companies c join public.plans p on p.code = c.plan_code
+         left join public.site_settings s on s.company_id = c.id
+         where c.id = $1`,
+        [ctx.company.id],
+      )
+    ).rows[0],
+  );
 
   return (
     <>
@@ -74,6 +87,23 @@ export default async function BrandingPage({ params, searchParams }: PageProps<"
         </Card>
       </div>
       <LogoAndMotion slug={slug} logoUrl={b.logoUrl} motionLevel={b.motionLevel} />
+      {badge && badge.show !== null ? (
+        <Card title="“Website by ZimERP”" className="mt-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="max-w-xl text-sm text-zinc-600 dark:text-zinc-400">
+              {badge.can_hide
+                ? `Your website footer ${badge.show ? "shows" : "does not show"} a small “Website by ZimERP” link.`
+                : "Your website footer shows a small “Website by ZimERP” link. The Growth plan and higher can hide it."}
+            </p>
+            {badge.can_hide ? (
+              <form action={setPlatformBadge.bind(null, slug)}>
+                <input type="hidden" name="show" value={String(!badge.show)} />
+                <Button type="submit" variant="secondary">{badge.show ? "Hide it" : "Show it"}</Button>
+              </form>
+            ) : null}
+          </div>
+        </Card>
+      ) : null}
     </>
   );
 }

@@ -1,10 +1,10 @@
 "use server";
 
-import { headers } from "next/headers";
 import { act, text, UserError } from "@/server/act";
 import { authMode } from "@/server/auth";
 import { getPool } from "@/server/db";
-import { platformDomain, requestProtocol, siteOrigin } from "@/server/urls";
+import { companyOrigins } from "@/server/domains";
+import { platformDomain } from "@/server/urls";
 import { adapters } from "@/server/web/services";
 
 // Customer portal access (P19), from the customer's page in the ERP. Needs
@@ -59,8 +59,7 @@ export async function invitePortalUser(slug: string, customerId: string, form: F
         await q("insert into public.portal_users (company_id, customer_id, user_id) values ($1, $2, $3)", [ctx.company.id, customerId, userId]);
       }
 
-      const h = await headers();
-      const link = `${siteOrigin(slug, platformDomain(), h.get("host"), requestProtocol(h.get("x-forwarded-proto")))}/account/sign-in`;
+      const link = `${(await companyOrigins(slug)).site}/account/sign-in`;
       try {
         await adapters().email.send({
           from: `${ctx.company.name} <${process.env.PORTAL_EMAIL_FROM ?? `no-reply@${platformDomain()}`}>`,

@@ -53,6 +53,15 @@ export default async function SignUpPage({ searchParams }: PageProps<"/signup">)
               placeholder="mhofu"
               hint={`Your website will be at <name>.${domain} and your ERP at erp.<name>.${domain}. Lower-case letters, numbers and hyphens.`}
             />
+            <Field
+              label="Your own domain (optional)"
+              name="own_domain"
+              defaultValue={value("own_domain")}
+              placeholder="www.mhofu.co.zw"
+              autoCapitalize="none"
+              spellCheck={false}
+              hint="Already have a domain? We connect it once you add one DNS record. No domain yet? You can register one in Settings > Domains later."
+            />
             <div className="grid gap-5 sm:grid-cols-2">
               <SelectField
                 label="Plan"

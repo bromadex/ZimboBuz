@@ -25,7 +25,7 @@ afterAll(async () => {
 
 describe("resolve_site", () => {
   it("finds a company's platform subdomain for anonymous visitors", async () => {
-    expect(await resolve("Mhofu.zimerp.co.zw.")).toEqual([{ company_slug: "mhofu", kind: "website", company_name: "Mhofu Hardware" }]);
+    expect(await resolve("Mhofu.zimerp.co.zw.")).toEqual([{ company_slug: "mhofu", kind: "website", company_name: "Mhofu Hardware", site_host: "mhofu.zimerp.co.zw", erp_host: null }]);
   });
 
   it("ignores unverified and archived domains", async () => {
@@ -35,7 +35,7 @@ describe("resolve_site", () => {
     );
     expect(await resolve("erp.mhofu.co.zw")).toEqual([]);
     await db.admin.query("update public.company_domains set verified_at = now() where hostname = 'erp.mhofu.co.zw'");
-    expect(await resolve("erp.mhofu.co.zw")).toEqual([{ company_slug: "mhofu", kind: "erp", company_name: "Mhofu Hardware" }]);
+    expect(await resolve("erp.mhofu.co.zw")).toMatchObject([{ company_slug: "mhofu", kind: "erp", company_name: "Mhofu Hardware" }]);
     await db.admin.query("update public.company_domains set archived_at = now() where hostname = 'erp.mhofu.co.zw'");
     expect(await resolve("erp.mhofu.co.zw")).toEqual([]);
   });

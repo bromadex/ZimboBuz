@@ -6,6 +6,7 @@ import { FakeMessenger, WhatsAppCloudMessenger, type Messenger } from "./messagi
 import { FakePaymentGateway } from "./payments/fake";
 import { PaynowGateway } from "./payments/paynow";
 import type { PaymentGateway } from "./payments/types";
+import { FakeRegistrar, ManualRegistrar, type DomainRegistrar } from "./registrar";
 import { FileSystemStorage, MemoryFileStorage, type FileStorage } from "./storage";
 
 // One place that decides which implementation each adapter uses, from
@@ -19,6 +20,8 @@ export interface Adapters {
   messaging: Messenger;
   storage: FileStorage;
   domains: DomainProvider;
+  /** Registering new domains for companies. */
+  registrar: DomainRegistrar;
   fiscal: FiscalDevice;
   ai: AiAssistant;
   /** Services running on fakes because configuration is missing. */
@@ -52,6 +55,7 @@ export function createAdapters(env: Env = process.env): Adapters {
       () => new VercelDomainProvider(env.VERCEL_TOKEN!, env.VERCEL_PROJECT_ID!, env.VERCEL_TEAM_ID),
       () => new FakeDomainProvider(),
     ),
+    registrar: forceFake || env.DOMAIN_REGISTRAR === "fake" ? new FakeRegistrar() : new ManualRegistrar(),
     fiscal: new FakeFiscalDevice(),
     ai: new FakeAiAssistant(),
     missing,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allowsArea, cachedLookup, classifyHost, normaliseHost, type SiteRecord } from "./host";
+import { allowsArea, cachedLookup, canonicalHost, classifyHost, databaseLookup, normaliseHost, type SiteRecord } from "./host";
 
 const P = "zimerp.co.zw";
 
@@ -59,5 +59,33 @@ describe("cachedLookup", () => {
     clock = 2000;
     await lookup("known.co.zw");
     expect(calls).toBe(3);
+  });
+});
+
+describe("main addresses", () => {
+  const record = { companySlug: "mhofu", kind: "website" as const, companyName: "Mhofu", siteHost: "www.mhofu.co.zw", erpHost: null };
+  const site = (host: string) => classifyHost(host, "zimerp.co.zw") as Extract<ReturnType<typeof classifyHost>, { kind: "tenant" }>;
+
+  it("sends website visitors to the main address", () => {
+    expect(canonicalHost(record, site("mhofu.zimerp.co.zw"), "mhofu.zimerp.co.zw", "zimerp.co.zw")).toBe("www.mhofu.co.zw");
+    expect(canonicalHost(record, site("mhofu.co.zw"), "mhofu.co.zw", "zimerp.co.zw")).toBe("www.mhofu.co.zw");
+    expect(canonicalHost(record, site("www.mhofu.co.zw"), "www.mhofu.co.zw:443", "zimerp.co.zw")).toBeNull();
+    expect(canonicalHost({ ...record, siteHost: "mhofu.zimerp.co.zw" }, site("mhofu.zimerp.co.zw"), "mhofu.zimerp.co.zw", "zimerp.co.zw")).toBeNull();
+  });
+
+  it("keeps the ZimERP ERP address unless the company has its own main ERP address", () => {
+    expect(canonicalHost(record, site("erp.mhofu.zimerp.co.zw"), "erp.mhofu.zimerp.co.zw", "zimerp.co.zw")).toBeNull();
+    expect(canonicalHost({ ...record, erpHost: "erp.mhofu.co.zw" }, site("erp.mhofu.zimerp.co.zw"), "erp.mhofu.zimerp.co.zw", "zimerp.co.zw")).toBe("erp.mhofu.co.zw");
+    expect(canonicalHost({ ...record, kind: "erp" }, site("erp.old-name.co.zw"), "erp.old-name.co.zw", "zimerp.co.zw")).toBe("erp.mhofu.zimerp.co.zw");
+  });
+});
+
+describe("databaseLookup", () => {
+  it("reads the main addresses", async () => {
+    const lookup = databaseLookup(async () => ({
+      rows: [{ company_slug: "mhofu", kind: "website", company_name: "Mhofu", site_host: "www.mhofu.co.zw", erp_host: null }],
+    }));
+    expect(await lookup("mhofu.co.zw")).toEqual({ companySlug: "mhofu", kind: "website", companyName: "Mhofu", siteHost: "www.mhofu.co.zw", erpHost: null });
+    expect(await databaseLookup(async () => ({ rows: [] }))("x.co.zw")).toBeNull();
   });
 });

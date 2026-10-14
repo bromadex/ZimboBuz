@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { headers } from "next/headers";
 import { ListView } from "@/components/list-view";
 import { Badge, Button, Card, Field, Notice, PageHeader, TextArea } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
@@ -7,7 +6,8 @@ import { likePattern, listParams } from "@/lib/list-params";
 import { SOCIAL_NETWORKS } from "@/lib/site/theme";
 import { requirePermission } from "@/server/company";
 import { withUser } from "@/server/data";
-import { platformDomain, requestProtocol, siteOrigin } from "@/server/urls";
+import { companyOrigins } from "@/server/domains";
+import { platformDomain } from "@/server/urls";
 import { addPage, saveSiteSettings, setSitePublished, setTemplate } from "./actions";
 
 // Website and store (P9): pages, template, site details and going live.
@@ -89,8 +89,7 @@ export default async function WebsitePage({ params, searchParams }: PageProps<"/
     return { settings, pages, total, domain };
   });
 
-  const h = await headers();
-  const origin = siteOrigin(slug, platformDomain(), h.get("host"), requestProtocol(h.get("x-forwarded-proto")));
+  const origin = (await companyOrigins(slug)).site;
   const s = data.settings;
   const live = s?.published ?? false;
 

@@ -33,3 +33,12 @@ export async function saveMotion(slug: string, form: FormData): Promise<never> {
     await changed(q("update public.company_branding set motion_level = $2 where company_id = $1", [ctx.company.id, level]));
   });
 }
+
+// "Website by ZimERP" in the website footer (Growth plan and higher may hide it).
+export async function setPlatformBadge(slug: string, form: FormData): Promise<never> {
+  const show = text(form, "show") === "true";
+  return act(slug, BACK, show ? "“Website by ZimERP” is shown on your website." : "“Website by ZimERP” is hidden on your website.", async (q, ctx) => {
+    const updated = await q("update public.site_settings set show_platform_badge = $2 where company_id = $1", [ctx.company.id, show]);
+    if (!updated.rowCount) throw new UserError("Open the Website screen once to set up your website first.");
+  });
+}

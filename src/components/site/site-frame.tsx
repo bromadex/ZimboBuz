@@ -148,9 +148,11 @@ export function SiteFooter({ site }: { site: SiteView }) {
           <span>
             © {new Date().getFullYear()} {site.companyName}
           </span>
-          <span>
-            Website by <a href="https://zimerp.co.zw" rel="noopener">ZimERP</a>
-          </span>
+          {site.platformBadge ? (
+            <span>
+              Website by <a href="https://zimerp.co.zw" rel="noopener">ZimERP</a>
+            </span>
+          ) : null}
         </div>
       </div>
       {wa ? (

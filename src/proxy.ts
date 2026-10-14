@@ -1,6 +1,16 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
-import { allowsArea, cachedLookup, classifyHost, devLookup, supabaseLookup, type SiteLookup } from "@/lib/tenancy/host";
+import {
+  allowsArea,
+  cachedLookup,
+  canonicalHost,
+  classifyHost,
+  databaseLookup,
+  devLookup,
+  supabaseLookup,
+  type SiteLookup,
+} from "@/lib/tenancy/host";
+import { getPool } from "@/server/db";
 import { sessionSecret } from "@/server/session";
 
 // Routes each request to the right company by hostname (issue #23).
@@ -9,11 +19,21 @@ import { sessionSecret } from "@/server/session";
 
 const platformDomain = process.env.ZIMERP_PLATFORM_DOMAIN ?? "zimerp.co.zw";
 
+// Supabase when connected; the database directly when only DATABASE_URL is
+// set; otherwise platform addresses resolve to their slug (no own domains).
 const lookup: SiteLookup = cachedLookup(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     ? supabaseLookup(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-    : devLookup(platformDomain),
+    : process.env.DATABASE_URL
+      ? databaseLookup((sql, params) => getPool().query(sql, params))
+      : devLookup(platformDomain),
+  Number(process.env.SITE_LOOKUP_CACHE_MS ?? 60_000),
 );
+
+function portOf(host: string | null): string {
+  const match = /:(\d+)$/.exec(host ?? "");
+  return match ? `:${match[1]}` : "";
+}
 
 // Some requests come back through the proxy from the server itself: the
 // standalone build re-enters rewritten requests, and a form action that
@@ -59,10 +79,27 @@ export async function proxy(request: NextRequest) {
   if (target.kind === "invalid") return notFound();
   if (target.kind === "platform") return internal ? notFound() : NextResponse.next({ request: { headers } });
 
-  const site = await lookup(target.lookupHost);
+  // ZimERP addresses are routed by their slug even when the lookup finds no
+  // live domain (a suspended company must still reach its ERP to pay); own
+  // domains must be connected and verified.
+  const found = await lookup(target.lookupHost);
+  const site =
+    found ?? (target.custom ? null : { companySlug: target.lookupHost.slice(0, -(platformDomain.length + 1)), kind: "website" as const, companyName: "" });
   if (!site || !allowsArea(site, target)) return notFound();
 
   if (internal) return notFound();
+
+  // Visitors on an address that is not the company's main one are sent there
+  // (pages only: form posts and API calls are left alone).
+  if (request.method === "GET" || request.method === "HEAD") {
+    const main = canonicalHost(site, target, request.headers.get("host") ?? "", platformDomain);
+    if (main) {
+      const proto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || request.nextUrl.protocol.replace(":", "");
+      const port = main.endsWith(`.${platformDomain}`) ? portOf(request.headers.get("host")) : "";
+      return NextResponse.redirect(`${proto}://${main}${port}${pathname}${search}`, 308);
+    }
+  }
+
   const prefix = target.area === "erp" ? "/e" : "/s";
   const url = request.nextUrl.clone();
   url.pathname = `${prefix}/${site.companySlug}${pathname === "/" ? "" : pathname}`;
