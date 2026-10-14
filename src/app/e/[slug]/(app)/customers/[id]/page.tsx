@@ -36,7 +36,15 @@ export default async function CustomerPage({ params, searchParams }: PageProps<"
           )
         ).rows
       : [];
-    return { customer, balances };
+    const credits = canSeeSales
+      ? (
+          await q<{ currency: string; c: string }>(
+            "select cur as currency, app.customer_credit_cents($1, $2, cur) as c from unnest(array['USD','ZWG','ZAR']) cur",
+            [ctx.company.id, id],
+          )
+        ).rows.filter((r) => Number(r.c) > 0)
+      : [];
+    return { customer, balances, credits };
   });
   if (!data.customer) notFound();
   const c = data.customer;
@@ -75,6 +83,24 @@ export default async function CustomerPage({ params, searchParams }: PageProps<"
               ["VAT number", c.vat_number ?? "—"],
               ["Credit limit", c.credit_limit_cents ? money(c.credit_limit_cents, c.currency) : "None"],
               ["Owes you", data.balances.length ? data.balances.map((b) => money(b.balance, b.currency)).join(", ") : "Nothing"],
+              [
+                "Credit with you",
+                data.credits.length ? (
+                  <span>
+                    {data.credits.map((c) => money(c.c, c.currency)).join(", ")}
+                    {ctx.permissions.has("sales.payment.record") || ctx.permissions.has("pos.refund") ? (
+                      <>
+                        {" "}
+                        <Link className="text-xs underline" href={`/sales/refunds/new?customer=${id}`}>
+                          Refund
+                        </Link>
+                      </>
+                    ) : null}
+                  </span>
+                ) : (
+                  "None"
+                ),
+              ],
               ["Status", c.archived_at ? "Archived" : "Active"],
             ]}
           />

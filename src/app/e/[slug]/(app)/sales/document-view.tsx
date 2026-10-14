@@ -73,6 +73,11 @@ export function DocumentView({
                 Record payment
               </Link>
             ) : null}
+            {!quote && h.docstatus === 1 && (can("sales.invoice.cancel") || can("pos.refund")) ? (
+              <Link href={`/sales/invoices/${h.id}/credit`} className="rounded-[var(--radius)] border border-zinc-300 px-4 py-2 text-sm font-semibold dark:border-zinc-700">
+                Credit or return items
+              </Link>
+            ) : null}
             {quote && h.docstatus === 1 && can("sales.invoice.create") ? (
               <form action={convertQuote.bind(null, slug, h.id)}>
                 <Button type="submit">Make invoice</Button>

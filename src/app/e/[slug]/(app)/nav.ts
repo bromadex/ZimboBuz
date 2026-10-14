@@ -23,6 +23,7 @@ export const NAV: NavGroup[] = [
       { href: "/sales/quotes", label: "Quotes", anyOf: ["sales.view"] },
       { href: "/sales/invoices", label: "Invoices", anyOf: ["sales.view"] },
       { href: "/sales/payments", label: "Payments", anyOf: ["sales.view"] },
+      { href: "/sales/credit-notes", label: "Credit notes and refunds", anyOf: ["sales.view"] },
       { href: "/sales/debtors", label: "Credit book", anyOf: ["sales.view"] },
       { href: "/customers", label: "Customers", anyOf: ["core.customers.view"] },
       { href: "/leads", label: "Enquiries", anyOf: ["sales.view"] },

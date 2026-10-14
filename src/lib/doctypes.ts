@@ -18,6 +18,8 @@ export const DOCTYPE_ROUTES: Record<string, DoctypeRoute> = {
     filters: { customer_id: "customer", quote_id: "quote", till_session_id: "session" },
   },
   payment: { list: "/sales/payments", detail: (id) => `/sales/payments/${id}`, filters: { customer_id: "customer", till_session_id: "session" } },
+  credit_note: { list: "/sales/credit-notes", detail: (id) => `/sales/credit-notes/${id}`, filters: { invoice_id: "invoice", customer_id: "customer" } },
+  refund: { list: "/sales/refunds", detail: (id) => `/sales/refunds/${id}`, filters: { customer_id: "customer", till_session_id: "session" } },
   lead: { list: "/leads", filters: { customer_id: "customer" } },
   stock_movement: {
     list: "/stock/movements",

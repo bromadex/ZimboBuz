@@ -39,12 +39,9 @@ export default async function DebtorsPage({ params, searchParams }: PageProps<"/
     ).rows;
     const credits = (
       await q<{ customer_id: string; name: string; currency: string; credit_cents: string }>(
-        `select p.customer_id, c.name, p.currency,
-                sum(p.amount_cents - coalesce((select sum(a.amount_cents) from public.payment_allocations a where a.payment_id = p.id), 0)) as credit_cents
-         from public.payments p join public.customers c on c.id = p.customer_id
-         where p.company_id = $1 and p.docstatus = 1
-         group by p.customer_id, c.name, p.currency
-         having sum(p.amount_cents - coalesce((select sum(a.amount_cents) from public.payment_allocations a where a.payment_id = p.id), 0)) > 0
+        `select c.id as customer_id, c.name, cur as currency, app.customer_credit_cents($1, c.id, cur) as credit_cents
+         from public.customers c cross join unnest(array['USD','ZWG','ZAR']) cur
+         where c.company_id = $1 and app.customer_credit_cents($1, c.id, cur) > 0
          order by c.name`,
         [ctx.company.id],
       )
@@ -120,7 +117,7 @@ export default async function DebtorsPage({ params, searchParams }: PageProps<"/
         </div>
       ) : null}
       {credits.length ? (
-        <Card title="Paid in advance (customer credit)" className="mt-6">
+        <Card title="Customer credit (paid in advance or credited)" className="mt-6">
           <ul className="divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
             {credits.map((c) => (
               <li key={`${c.customer_id}-${c.currency}`} className="flex justify-between py-2">

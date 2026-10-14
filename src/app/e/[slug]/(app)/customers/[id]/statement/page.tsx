@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Button, Card, Field, PageHeader, SelectField } from "@/components/ui";
 import { CURRENCY_OPTIONS, formatDate, money } from "@/lib/format";
 import { requirePermission } from "@/server/company";
-import { KIND_LABEL, loadStatement } from "../../../sales/statement";
+import { KIND_LABEL, loadStatement, statementHref } from "../../../sales/statement";
 
 export default async function StatementPage({ params, searchParams }: PageProps<"/e/[slug]/customers/[id]/statement">) {
   const { slug, id } = await params;
@@ -54,7 +54,7 @@ export default async function StatementPage({ params, searchParams }: PageProps<
                 <td className="px-3 py-2">
                   {KIND_LABEL[l.kind]}{" "}
                   {l.reference && l.document_id ? (
-                    <Link className="underline" href={l.kind === "invoice" ? `/sales/invoices/${l.document_id}` : `/sales/payments/${l.document_id}`}>
+                    <Link className="underline" href={statementHref(l.kind, l.document_id)}>
                       {l.reference}
                     </Link>
                   ) : null}

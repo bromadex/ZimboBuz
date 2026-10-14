@@ -5,7 +5,7 @@ import { todayIso } from "@/lib/format";
 
 export interface StatementLine {
   entry_date: string | null;
-  kind: "opening" | "invoice" | "payment" | "advance";
+  kind: "opening" | "invoice" | "payment" | "advance" | "credit_note" | "credit_used" | "refund";
   reference: string | null;
   document_id: string | null;
   debit_cents: string;
@@ -42,4 +42,20 @@ export async function loadStatement(ctx: CompanyContext, customerId: string, sp:
   });
 }
 
-export const KIND_LABEL: Record<string, string> = { opening: "Balance brought forward", invoice: "Invoice", payment: "Payment", advance: "Paid in advance" };
+export const KIND_LABEL: Record<string, string> = {
+  opening: "Balance brought forward",
+  invoice: "Invoice",
+  payment: "Payment",
+  advance: "Paid in advance",
+  credit_note: "Credit note",
+  credit_used: "Credit used",
+  refund: "Refund",
+};
+
+/** Record page for a statement line's document. */
+export function statementHref(kind: string, id: string): string {
+  if (kind === "invoice") return `/sales/invoices/${id}`;
+  if (kind === "credit_note") return `/sales/credit-notes/${id}`;
+  if (kind === "refund") return `/sales/refunds/${id}`;
+  return `/sales/payments/${id}`;
+}
