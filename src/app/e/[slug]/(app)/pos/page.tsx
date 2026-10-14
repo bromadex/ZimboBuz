@@ -3,6 +3,7 @@ import { Button, Card, Field, Notice, PageHeader, SelectField } from "@/componen
 import type { Currency } from "@/lib/pos/math";
 import { requirePermission } from "@/server/company";
 import { withUser } from "@/server/data";
+import { assetUrl } from "@/lib/site/theme";
 import { openTill } from "./actions";
 import { PosTerminal, type PosProduct } from "./terminal";
 
@@ -37,8 +38,8 @@ export default async function PosPage({ params, searchParams }: PageProps<"/e/[s
     for (const r of rateRows) rates[r.currency.trim() as Currency] = Number(r.rate);
 
     const products = (
-      await q<{ id: string; sku: string; barcode: string | null; name: string; rate_bp: number; prices: Record<string, string> | null; stock: string | null }>(
-        `select p.id, p.sku, p.barcode, p.name, app.tax_rate_bp(p.company_id, p.tax_code, current_date) as rate_bp,
+      await q<{ id: string; sku: string; barcode: string | null; name: string; rate_bp: number; prices: Record<string, string> | null; stock: string | null; image_key: string | null }>(
+        `select p.id, p.sku, p.barcode, p.name, p.image_key, app.tax_rate_bp(p.company_id, p.tax_code, current_date) as rate_bp,
                 (select jsonb_object_agg(pp.currency, pp.price_cents) from public.product_prices pp where pp.product_id = p.id) as prices,
                 ${can("inventory.view") ? "case when p.is_stock_item then (select coalesce(sum(s.quantity), 0) from public.stock_levels s join public.stock_locations l on l.id = s.location_id where s.product_id = p.id and l.branch_id = (select branch_id from public.till_sessions where id = $2)) end" : "null"} as stock
          from public.products p where p.company_id = $1 and p.archived_at is null order by p.name limit 3000`,
@@ -89,7 +90,7 @@ export default async function PosPage({ params, searchParams }: PageProps<"/e/[s
       if (own !== undefined) prices[cur] = Number(own);
       else if (base !== undefined && data.rates![cur]) prices[cur] = Math.round(Number(base) * data.rates![cur]!);
     }
-    return { id: p.id, sku: p.sku, barcode: p.barcode, name: p.name, rateBp: p.rate_bp, prices, stock: p.stock === null ? null : Number(p.stock) };
+    return { id: p.id, sku: p.sku, barcode: p.barcode, name: p.name, rateBp: p.rate_bp, prices, stock: p.stock === null ? null : Number(p.stock), imageUrl: assetUrl(p.image_key) };
   });
 
   return (

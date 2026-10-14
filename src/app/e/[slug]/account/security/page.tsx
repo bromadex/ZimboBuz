@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Badge, Button, Card, Field, Notice } from "@/components/ui";
 import { lookupCompany } from "@/server/company";
+import QRCode from "qrcode";
 import { open } from "@/server/secret-box";
 import { sessionSecret } from "@/server/session";
 import { groupSecret } from "@/server/totp";
@@ -127,7 +128,15 @@ export default async function SecurityPage({ params, searchParams }: PageProps<"
               Open an authenticator app on your phone (Google Authenticator, Microsoft Authenticator or similar) and add an account.
             </li>
             <li>
-              On this phone?{" "}
+              Scan this code with the app:
+              <span
+                className="my-2 block w-48 rounded bg-white p-2"
+                role="img"
+                aria-label="QR code for adding ZimERP to your authenticator app"
+                // QR code SVG made on the server from the setup link (no outside content).
+                dangerouslySetInnerHTML={{ __html: await QRCode.toString(status.pending.uri, { type: "svg", margin: 1, errorCorrectionLevel: "M" }) }}
+              />
+              On this phone instead?{" "}
               <a href={status.pending.uri} className="font-semibold text-[var(--brand,#0b6e4f)] underline">
                 Add ZimERP to your authenticator app
               </a>

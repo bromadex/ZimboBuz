@@ -1,5 +1,6 @@
 "use server";
 
+import { allow, TOO_MANY } from "@/server/rate-limit";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { EnquiryState } from "@/components/site/enquiry-state";
@@ -38,6 +39,7 @@ export async function sendEnquiry(slug: string, _state: EnquiryState, form: Form
   const phone = field(form, "phone", 40);
   const message = field(form, "message", 5000);
   if (!name) return { status: "error", error: "Please tell us your name." };
+  if (!(await allow("enquiry", slug))) return { status: "error", error: TOO_MANY };
   if (!email && !phone) return { status: "error", error: "Please give an email address or a phone number so we can reply." };
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { status: "error", error: "That email address does not look right." };
 
@@ -91,6 +93,7 @@ export async function previewEnquiry(_state: EnquiryState, _form: FormData): Pro
 
 export async function portalSignIn(slug: string, form: FormData): Promise<never> {
   const email = String(form.get("email") ?? "");
+  if (!(await allow("signIn", slug))) redirect(`/account/sign-in?${new URLSearchParams({ error: TOO_MANY })}`);
   let error: string | null = null;
   try {
     const userId = await devSignIn(email);

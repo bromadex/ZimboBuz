@@ -2,6 +2,7 @@
 
 import { amount, changed, CURRENCIES, optional, text, UserError } from "@/server/act";
 import { actStock } from "@/server/inventory/data";
+import { saveImage } from "@/server/web/uploads";
 
 // Product record actions (P7): details, prices per currency, archive and restore.
 
@@ -84,4 +85,13 @@ export async function setProductArchived(slug: string, id: string, formData: For
       ),
     ),
   );
+}
+
+// Product picture (P9): shown in the online store and at the till.
+export async function setProductPicture(slug: string, id: string, formData: FormData): Promise<never> {
+  const remove = text(formData, "remove") === "yes";
+  return actStock(slug, `/products/${id}`, remove ? "Picture removed." : "Picture saved.", async (q, ctx) => {
+    const key = remove ? null : await saveImage(q, ctx, formData.get("picture"), "product");
+    await changed(q("update public.products set image_key = $3 where company_id = $1 and id = $2", [ctx.company.id, id, key]));
+  });
 }

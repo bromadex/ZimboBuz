@@ -6,6 +6,7 @@ import { currentUserId, devSignIn, endTwoStep, startSession, startTwoStep, twoSt
 import { lookupCompany } from "@/server/company";
 import { friendlyError, withUser } from "@/server/data";
 import { TwoStepError, twoStepEnabled, verifyTwoStepCode } from "@/server/two-step";
+import { allow, TOO_MANY } from "@/server/rate-limit";
 import { safeNextPath } from "@/server/urls";
 
 // Signing in to a company's ERP: email (first step), then the code from an
@@ -21,6 +22,7 @@ function back(params: Record<string, string>): never {
 
 export async function signIn(formData: FormData): Promise<never> {
   const next = safeNextPath(field(formData, "next"));
+  if (!(await allow("signIn"))) back({ error: TOO_MANY });
   let userId: string;
   try {
     userId = await devSignIn(field(formData, "email"));
@@ -38,6 +40,7 @@ export async function signIn(formData: FormData): Promise<never> {
 
 export async function verifyCode(formData: FormData): Promise<never> {
   const next = safeNextPath(field(formData, "next"));
+  if (!(await allow("signIn", "code"))) back({ step: "code", next, error: TOO_MANY });
   const userId = await twoStepUserId();
   if (!userId) back({ error: "That took too long. Please sign in again." });
   try {

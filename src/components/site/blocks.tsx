@@ -61,9 +61,13 @@ export function ProductCard({ product, site }: { product: SiteProduct; site: Sit
   return (
     <article className="zs-card zs-product">
       <Link href={`/shop/${product.id}`} className="zs-product-media" aria-label={product.name} tabIndex={-1}>
-        <span className="zs-product-initials" aria-hidden>
-          {initials(product.name)}
-        </span>
+        {product.imageKey ? (
+          <Img src={assetUrl(product.imageKey)} alt="" />
+        ) : (
+          <span className="zs-product-initials" aria-hidden>
+            {initials(product.name)}
+          </span>
+        )}
       </Link>
       <div className="zs-product-body">
         <Link href={`/shop/${product.id}`} className="zs-product-name">

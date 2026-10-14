@@ -51,6 +51,7 @@ export interface SiteProduct {
   unit: string;
   priceCents: string | null;
   currency: string;
+  imageKey: string | null;
 }
 
 export interface ProductQuery {
@@ -96,7 +97,7 @@ function toBranding(b: Json): SiteBranding {
   };
 }
 
-type ProductRow = { id: string; name: string; description: string | null; unit: string; price_cents: string | null; currency: string; total?: string };
+type ProductRow = { id: string; name: string; description: string | null; unit: string; price_cents: string | null; currency: string; total?: string; image_key?: string | null };
 const toProduct = (r: ProductRow): SiteProduct => ({
   id: r.id,
   name: r.name,
@@ -104,6 +105,7 @@ const toProduct = (r: ProductRow): SiteProduct => ({
   unit: r.unit,
   priceCents: r.price_cents === null ? null : String(r.price_cents),
   currency: String(r.currency).trim(),
+  imageKey: r.image_key ?? null,
 });
 
 // --- Public (anonymous) -------------------------------------------------------
@@ -208,7 +210,7 @@ export function previewProducts(ctx: CompanyContext): ProductSource {
         (
           await q<ProductRow>(
             `select p.id, p.name, p.description, p.unit, app.price_cents(p.company_id, p.id, c.base_currency) as price_cents,
-                    c.base_currency as currency, count(*) over () as total
+                    c.base_currency as currency, count(*) over () as total, p.image_key
              from public.products p join public.companies c on c.id = p.company_id
              where p.company_id = $1 and p.show_online and p.archived_at is null
                and ($2::text is null or strpos(lower(p.name), lower($2)) > 0)

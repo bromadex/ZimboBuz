@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { devSignIn } from "@/server/auth";
+import { allow, TOO_MANY } from "@/server/rate-limit";
 import { friendlyError, withUser } from "@/server/data";
 import { createSessionToken, sessionSecret } from "@/server/session";
 import { erpOrigin, platformDomain, requestProtocol } from "@/server/urls";
@@ -25,6 +26,7 @@ export async function signUp(formData: FormData): Promise<never> {
     const params = new URLSearchParams({ error, email, company: name, slug, plan, currency });
     redirect(`/signup?${params}`);
   };
+  if (!(await allow("signUp"))) back(TOO_MANY);
   if (!name) back("Please enter your company name.");
   if (!/^[a-z0-9]([a-z0-9-]{0,40}[a-z0-9])?$/.test(slug)) {
     back("Web addresses use lower-case letters, numbers and hyphens only (2 to 42 characters).");

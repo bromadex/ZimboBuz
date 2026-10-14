@@ -3,11 +3,13 @@ import { getAdapters } from "@/server/adapters/shared";
 import { friendlyError, withAnon } from "@/server/data";
 import { getPool } from "@/server/db";
 import { gatewayCredentials } from "@/server/payments";
+import { allow, TOO_MANY } from "@/server/rate-limit";
 import { requestProtocol } from "@/server/urls";
 
 // Starts an online store payment: records the order as a draft invoice, then
 // hands the visitor to Paynow (the company's own account).
 export async function POST(request: NextRequest) {
+  if (!(await allow("checkout", "", request.headers))) return NextResponse.json({ error: TOO_MANY }, { status: 429 });
   let body: { slug?: string; name?: string; email?: string; phone?: string; currency?: string; items?: Array<{ productId: string; quantity: number }> };
   try {
     body = await request.json();

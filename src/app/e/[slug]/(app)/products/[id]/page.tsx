@@ -7,7 +7,8 @@ import { currencyLabel, formatDate, formatQuantity, money } from "@/lib/format";
 import { requirePermission } from "@/server/company";
 import { withUser } from "@/server/data";
 import { MOVEMENT_TYPES, TAX_LABELS } from "@/server/inventory/data";
-import { saveProductPrices, setProductArchived, updateProduct } from "../actions";
+import { assetUrl } from "@/lib/site/theme";
+import { saveProductPrices, setProductArchived, setProductPicture, updateProduct } from "../actions";
 
 type Product = {
   id: string;
@@ -22,6 +23,7 @@ type Product = {
   avg_cost: string | null;
   show_online: boolean;
   archived_at: Date | null;
+  image_key: string | null;
 };
 
 export default async function ProductPage({ params, searchParams }: PageProps<"/e/[slug]/products/[id]">) {
@@ -38,7 +40,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   const data = await withUser(ctx.userId, async (q) => {
     const product = (
       await q<Product>(
-        `select id, sku, barcode, name, description, unit, is_stock_item, tax_code, reorder_level, avg_cost, show_online, archived_at
+        `select id, sku, barcode, name, description, unit, is_stock_item, tax_code, reorder_level, avg_cost, show_online, archived_at, image_key
          from public.products_v where company_id = $1 and id = $2`,
         [ctx.company.id, id],
       )
@@ -157,6 +159,36 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
             ]}
           />
           {p.description ? <p className="mt-4 whitespace-pre-wrap border-t border-zinc-200 pt-4 text-sm dark:border-zinc-800">{p.description}</p> : null}
+        </Card>
+
+        <Card title="Picture">
+          <div className="flex flex-wrap items-start gap-4">
+            {p.image_key ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={assetUrl(p.image_key) ?? ""} alt={p.name} className="size-32 rounded-[var(--radius)] border border-zinc-200 object-cover dark:border-zinc-800" />
+            ) : (
+              <div className="flex size-32 items-center justify-center rounded-[var(--radius)] border border-dashed border-zinc-300 text-xs text-zinc-500 dark:border-zinc-700">No picture</div>
+            )}
+            {canEdit ? (
+              <div className="space-y-2">
+                <form action={setProductPicture.bind(null, slug, id)} className="flex flex-wrap items-center gap-2">
+                  <input type="file" name="picture" accept="image/png,image/jpeg,image/webp" required aria-label="Product picture" className="text-sm" />
+                  <Button type="submit" variant="secondary">
+                    {p.image_key ? "Replace picture" : "Upload picture"}
+                  </Button>
+                </form>
+                {p.image_key ? (
+                  <form action={setProductPicture.bind(null, slug, id)}>
+                    <input type="hidden" name="remove" value="yes" />
+                    <button type="submit" className="text-xs text-zinc-500 underline">
+                      Remove picture
+                    </button>
+                  </form>
+                ) : null}
+                <p className="text-xs text-zinc-500">PNG, JPEG or WebP, up to 1 MB. Shown in your online store and at the till.</p>
+              </div>
+            ) : null}
+          </div>
         </Card>
 
         <Card title="Prices">

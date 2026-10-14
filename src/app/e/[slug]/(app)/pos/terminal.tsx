@@ -19,6 +19,7 @@ export interface PosProduct {
   rateBp: number;
   prices: Partial<Record<Currency, number>>;
   stock: number | null;
+  imageUrl: string | null;
 }
 
 interface Line {
@@ -313,6 +314,10 @@ export function PosTerminal({
                 onClick={() => add(p.id)}
                 className="flex h-full w-full flex-col items-start rounded-[var(--radius)] border border-zinc-200 bg-white p-3 text-left shadow-sm transition hover:border-[var(--brand)] active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900"
               >
+                {p.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.imageUrl} alt="" loading="lazy" className="mb-2 aspect-square w-full rounded object-cover" />
+                ) : null}
                 <span className="line-clamp-2 text-sm font-semibold">{p.name}</span>
                 <span className="font-mono text-xs text-zinc-500">{p.sku}</span>
                 <span className="mt-auto pt-2 text-sm tabular-nums">{p.prices[currency] !== undefined ? fmt(p.prices[currency]!, currency) : "No price"}</span>

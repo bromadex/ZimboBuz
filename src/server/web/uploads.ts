@@ -10,7 +10,7 @@ import { adapters } from "./services";
 // content, registered in site_assets as the user (row-level security decides
 // who may upload what), then written to file storage under the company id.
 
-export async function saveImage(q: Query, ctx: CompanyContext, upload: FormDataEntryValue | null, kind: "logo" | "image"): Promise<string> {
+export async function saveImage(q: Query, ctx: CompanyContext, upload: FormDataEntryValue | null, kind: "logo" | "image" | "product"): Promise<string> {
   if (!upload || typeof upload === "string" || upload.size === 0) throw new UserError("Please choose a picture to upload.");
   if (upload.size > 2 * 1024 * 1024) throw new UserError("That picture is too big. Please use one under 1024 KB.");
   const bytes = new Uint8Array(await upload.arrayBuffer());
@@ -18,7 +18,8 @@ export async function saveImage(q: Query, ctx: CompanyContext, upload: FormDataE
   if (!check.ok) throw new UserError(check.error);
 
   const name = randomBytes(9).toString("hex");
-  const path = kind === "logo" ? `branding/logo-${name}.${check.extension}` : `site/${name}.${check.extension}`;
+  const path =
+    kind === "logo" ? `branding/logo-${name}.${check.extension}` : kind === "product" ? `products/${name}.${check.extension}` : `site/${name}.${check.extension}`;
   const key = `${ctx.company.id}/${path}`;
   await q(
     `insert into public.site_assets (company_id, storage_key, kind, content_type, size_bytes, file_name, created_by)

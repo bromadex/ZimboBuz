@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { priceLabel } from "@/components/site/blocks";
 import { AddToQuoteButton } from "@/components/site/quote-cart";
 import { initials } from "@/components/site/site-frame";
-import { whatsAppLink } from "@/lib/site/theme";
+import { assetUrl, whatsAppLink } from "@/lib/site/theme";
 import { publicProduct, publicSite } from "@/server/web/site-data";
 
 // One product page.
@@ -36,9 +36,14 @@ export default async function ProductPage({ params }: PageProps<"/s/[slug]/shop/
         <div className="zs-grid-2" style={{ alignItems: "start" }}>
           <div className="zs-card zs-product zs-reveal" data-reveal="zoom" style={{ boxShadow: "var(--shadow)" }}>
             <div className="zs-product-media" style={{ aspectRatio: "1" }}>
-              <span className="zs-product-initials" style={{ fontSize: "5rem" }} aria-hidden>
-                {initials(p.name)}
-              </span>
+              {p.imageKey ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={assetUrl(p.imageKey) ?? ""} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span className="zs-product-initials" style={{ fontSize: "5rem" }} aria-hidden>
+                  {initials(p.name)}
+                </span>
+              )}
             </div>
           </div>
           <div className="zs-reveal" data-reveal="fade-up">
