@@ -1,7 +1,20 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { Block, ContactBlock, FeaturedProductsBlock, HeroBlock, ImageTextBlock, ProductsBlock } from "@/lib/site/blocks";
-import { assetUrl, whatsAppLink } from "@/lib/site/theme";
+import type {
+  Block,
+  ContactBlock,
+  DonateBlock,
+  EventsBlock,
+  FaqBlock,
+  FeaturedProductsBlock,
+  HeroBlock,
+  ImageTextBlock,
+  PriceListBlock,
+  ProductsBlock,
+  StatsBlock,
+  TeamBlock,
+} from "@/lib/site/blocks";
+import { assetUrl, templateInfo, whatsAppLink } from "@/lib/site/theme";
 import { money } from "@/lib/format";
 import type { ProductSource, SiteProduct, SiteView } from "@/server/web/site-data";
 import type { EnquiryState } from "./enquiry-state";
@@ -123,11 +136,12 @@ function SectionHead({ heading, text, action }: { heading: string; text?: string
 
 function Hero({ b, site }: { b: HeroBlock; site: SiteView }) {
   const image = assetUrl(b.image);
-  const bold = site.settings.template === "bold";
+  // Some templates give the text the full width when there is no picture.
+  const art = !!image || templateInfo(site.settings.template).heroArt;
   return (
     <section className="zs-hero" id={b.id}>
       <div className="zs-hero-bg" aria-hidden />
-      <div className={`zs-container zs-hero-grid ${image ? "zs-has-image" : ""}`}>
+      <div className={`zs-container zs-hero-grid ${image ? "zs-has-image" : ""} ${art ? "" : "zs-hero-solo"}`}>
         <div className="zs-reveal" data-reveal={b.reveal}>
           {b.eyebrow ? <p className="zs-eyebrow">{b.eyebrow}</p> : null}
           <h1 className="zs-h1">{b.heading || site.companyName}</h1>
@@ -137,7 +151,7 @@ function Hero({ b, site }: { b: HeroBlock; site: SiteView }) {
             <Button label={b.secondary_label} href={b.secondary_link} ghost />
           </div>
         </div>
-        {image || !bold ? (
+        {art ? (
           <div className="zs-hero-art zs-reveal" data-reveal={b.reveal === "none" ? "none" : "zoom"}>
             {image ? <Img src={image} alt="" /> : <span className="zs-hero-art-mark" aria-hidden>{initials(site.companyName)}</span>}
           </div>
@@ -249,6 +263,145 @@ function Contact({ b, ctx }: { b: ContactBlock; ctx: Ctx }) {
   );
 }
 
+function PriceList({ b, preview }: { b: PriceListBlock; preview: boolean }) {
+  const groups = b.groups.filter((g) => g.items.length > 0);
+  if (!groups.length) return preview ? <EmptyHint block={b} text="Add items and prices to your price list." /> : null;
+  return (
+    <Section block={b}>
+      <SectionHead heading={b.heading} text={b.text} />
+      <div className={`zs-price-groups ${groups.length > 1 ? "zs-price-groups-2" : ""}`}>
+        {groups.map((g, gi) => (
+          <div key={gi} className="zs-price-group">
+            {g.title ? <h3 className="zs-h3 zs-price-group-title">{g.title}</h3> : null}
+            <ul className="zs-price-list">
+              {g.items.map((item, i) => (
+                <li key={i} className="zs-price-item">
+                  <div className="zs-price-row">
+                    <span className="zs-price-name">{item.name}</span>
+                    <span className="zs-price-dots" aria-hidden />
+                    {item.price ? <span className="zs-price-amount">{item.price}</span> : null}
+                  </div>
+                  {item.description ? <p className="zs-price-desc">{item.description}</p> : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function Events({ b, preview }: { b: EventsBlock; preview: boolean }) {
+  if (!b.items.length) return preview ? <EmptyHint block={b} text="Add your service times, term dates or events." /> : null;
+  return (
+    <Section block={b} tint>
+      <SectionHead heading={b.heading} text={b.text} />
+      <ul className="zs-events zs-stagger">
+        {b.items.map((e, i) => (
+          <li key={i} className="zs-card zs-event">
+            {e.when ? <p className="zs-event-when">{e.when}</p> : null}
+            <h3 className="zs-h3">{e.title}</h3>
+            {e.place ? <p className="zs-event-place">{e.place}</p> : null}
+            {e.description ? <p className="zs-event-desc">{e.description}</p> : null}
+          </li>
+        ))}
+      </ul>
+    </Section>
+  );
+}
+
+function Team({ b, preview }: { b: TeamBlock; preview: boolean }) {
+  if (!b.people.length) return preview ? <EmptyHint block={b} text="Add the people in your team. Only people who have agreed should be shown." /> : null;
+  return (
+    <Section block={b}>
+      <SectionHead heading={b.heading} text={b.text} />
+      <ul className="zs-team zs-stagger">
+        {b.people.map((p, i) => (
+          <li key={i} className="zs-card zs-person">
+            <div className="zs-person-photo">
+              {p.image ? <Img src={assetUrl(p.image)} alt={p.name} /> : <span className="zs-product-initials" aria-hidden>{initials(p.name)}</span>}
+            </div>
+            <div className="zs-person-body">
+              <h3 className="zs-h3">{p.name}</h3>
+              {p.role ? <p className="zs-person-role">{p.role}</p> : null}
+              {p.bio ? <p className="zs-person-bio">{p.bio}</p> : null}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Section>
+  );
+}
+
+function Faq({ b, preview }: { b: FaqBlock; preview: boolean }) {
+  if (!b.items.length) return preview ? <EmptyHint block={b} text="Add questions people often ask, with your answers." /> : null;
+  return (
+    <Section block={b}>
+      <div className="zs-faq-wrap">
+        <SectionHead heading={b.heading} />
+        <div className="zs-faq">
+          {b.items.map((f, i) => (
+            <details key={i} className="zs-faq-item">
+              <summary>{f.question}</summary>
+              <Paragraphs text={f.answer} className="zs-prose zs-faq-answer" />
+            </details>
+          ))}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function Stats({ b, preview }: { b: StatsBlock; preview: boolean }) {
+  if (!b.items.length) return preview ? <EmptyHint block={b} text="Add a few numbers to show your impact." /> : null;
+  return (
+    <section className="zs-section zs-stats-band" id={b.id}>
+      <div className="zs-container zs-reveal" data-reveal={b.reveal}>
+        {b.heading ? <h2 className="zs-h2 zs-stats-heading">{b.heading}</h2> : null}
+        <dl className="zs-stats zs-stagger">
+          {b.items.map((st, i) => (
+            <div key={i} className="zs-stat">
+              <dt>{st.label}</dt>
+              <dd>{st.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  );
+}
+
+function Donate({ b }: { b: DonateBlock }) {
+  return (
+    <section className="zs-section" id={b.id}>
+      <div className="zs-container">
+        <div className="zs-donate zs-reveal" data-reveal={b.reveal}>
+          <div className="zs-donate-intro">
+            {b.heading ? <h2 className="zs-h2">{b.heading}</h2> : null}
+            {b.text ? <p className="zs-lead mt-3">{b.text}</p> : null}
+            {b.button_label && b.button_link ? (
+              <div className="mt-6">
+                <Button label={b.button_label} href={b.button_link} />
+              </div>
+            ) : null}
+          </div>
+          {b.ways.length ? (
+            <ul className="zs-ways">
+              {b.ways.map((w, i) => (
+                <li key={i} className="zs-way">
+                  {w.title ? <h3 className="zs-h3">{w.title}</h3> : null}
+                  {w.detail ? <p className="whitespace-pre-line">{w.detail}</p> : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function EmptyHint({ block, text }: { block: Block; text: string }) {
   return (
     <section className="zs-section" id={block.id}>
@@ -334,6 +487,18 @@ export async function PageBlocks({ blocks, ...ctx }: { blocks: Block[] } & Ctx) 
                 </div>
               </Section>
             );
+          case "price_list":
+            return <PriceList key={b.id} b={b} preview={ctx.preview} />;
+          case "events":
+            return <Events key={b.id} b={b} preview={ctx.preview} />;
+          case "team":
+            return <Team key={b.id} b={b} preview={ctx.preview} />;
+          case "faq":
+            return <Faq key={b.id} b={b} preview={ctx.preview} />;
+          case "stats":
+            return <Stats key={b.id} b={b} preview={ctx.preview} />;
+          case "donate":
+            return <Donate key={b.id} b={b} />;
         }
       })}
     </>

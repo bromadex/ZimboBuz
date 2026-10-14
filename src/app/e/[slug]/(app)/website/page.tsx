@@ -4,7 +4,7 @@ import { ListView } from "@/components/list-view";
 import { Badge, Button, Card, Field, Notice, PageHeader, TextArea } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import { likePattern, listParams } from "@/lib/list-params";
-import { SOCIAL_NETWORKS } from "@/lib/site/theme";
+import { isTemplate, SOCIAL_NETWORKS, TEMPLATES, type Template } from "@/lib/site/theme";
 import { requirePermission } from "@/server/company";
 import { withUser } from "@/server/data";
 import { platformDomain, requestProtocol, siteOrigin } from "@/server/urls";
@@ -23,38 +23,171 @@ type PageRow = {
 };
 
 type Settings = {
-  template: "classic" | "bold"; published: boolean; published_at: Date | null; tagline: string | null; about: string | null;
+  template: Template; published: boolean; published_at: Date | null; tagline: string | null; about: string | null;
   contact_phone: string | null; contact_whatsapp: string | null; contact_email: string | null; address: string | null;
   opening_hours: string | null; social_links: Record<string, string>; seo_description: string | null;
 };
 
-function TemplatePicture({ kind }: { kind: "classic" | "bold" }) {
-  const bold = kind === "bold";
+// A small drawing of each template, in the company's colours.
+function MiniHeader({ dark = false, border = "border-b border-zinc-200", mark = "rounded-sm", centre = false }: { dark?: boolean; border?: string; mark?: string; centre?: boolean }) {
   return (
-    <div aria-hidden className="overflow-hidden rounded-[var(--radius)] border border-zinc-200 bg-white dark:border-zinc-700">
-      <div className={`flex items-center gap-1.5 px-2 py-1.5 ${bold ? "bg-[var(--brand)]" : "border-b border-zinc-200"}`}>
-        <span className={`size-2.5 rounded-sm ${bold ? "bg-white" : "bg-[var(--brand)]"}`} />
-        <span className={`h-1.5 w-8 rounded ${bold ? "bg-white/70" : "bg-zinc-300"}`} />
+    <div className={`flex items-center gap-1.5 px-2 py-1.5 ${dark ? "bg-[var(--brand)]" : border} ${centre ? "justify-center" : ""}`}>
+      <span className={`size-2.5 ${mark} ${dark ? "bg-white" : "bg-[var(--brand)]"}`} />
+      <span className={`h-1.5 w-8 rounded ${dark ? "bg-white/70" : "bg-zinc-300"}`} />
+      {centre ? null : (
         <span className="ml-auto flex gap-1">
-          {[0, 1, 2].map((i) => <span key={i} className={`h-1 w-4 rounded ${bold ? "bg-white/60" : "bg-zinc-300"}`} />)}
+          {[0, 1, 2].map((i) => <span key={i} className={`h-1 w-4 rounded ${dark ? "bg-white/60" : "bg-zinc-300"}`} />)}
         </span>
-      </div>
-      <div className={`grid gap-2 p-3 ${bold ? "bg-[var(--brand)]" : "grid-cols-[1.2fr_1fr] bg-gradient-to-b from-zinc-100 to-white"}`}>
-        <div className="space-y-1.5">
-          <span className={`block h-3 rounded ${bold ? "w-4/5 bg-white" : "w-11/12 bg-zinc-800"}`} />
-          <span className={`block h-3 rounded ${bold ? "w-3/5 bg-white" : "w-3/4 bg-zinc-800"}`} />
-          <span className={`block h-1.5 w-2/3 rounded ${bold ? "bg-white/60" : "bg-zinc-400"}`} />
-          <span className={`mt-2 block h-3 w-12 ${bold ? "rounded-sm bg-[var(--brand-accent)]" : "rounded bg-[var(--brand)]"}`} />
-        </div>
-        {bold ? null : <span className="block rounded bg-[var(--brand)] opacity-80" />}
-      </div>
-      <div className="grid grid-cols-3 gap-1.5 p-3">
-        {[0, 1, 2].map((i) => (
-          <span key={i} className={`block h-8 rounded ${bold ? "bg-zinc-200 shadow" : "border border-zinc-200 bg-zinc-50"}`} />
-        ))}
-      </div>
+      )}
     </div>
   );
+}
+
+function Lines({ light = false, widths = ["w-11/12", "w-3/4"], centre = false }: { light?: boolean; widths?: string[]; centre?: boolean }) {
+  return (
+    <div className={`space-y-1.5 ${centre ? "flex flex-col items-center" : ""}`}>
+      {widths.map((w, i) => <span key={i} className={`block h-3 rounded ${w} ${light ? "bg-white" : "bg-zinc-800"}`} />)}
+      <span className={`block h-1.5 w-2/3 rounded ${light ? "bg-white/60" : "bg-zinc-400"}`} />
+    </div>
+  );
+}
+
+function Cards({ count = 3, className = "h-8 rounded border border-zinc-200 bg-zinc-50" }: { count?: number; className?: string }) {
+  return (
+    <div className={`grid gap-1.5 p-3 ${count === 2 ? "grid-cols-2" : count === 4 ? "grid-cols-4" : "grid-cols-3"}`}>
+      {Array.from({ length: count }, (_, i) => <span key={i} className={`block ${className}`} />)}
+    </div>
+  );
+}
+
+function TemplatePicture({ kind }: { kind: Template }) {
+  const frame = "overflow-hidden rounded-[var(--radius)] border border-zinc-200 bg-white dark:border-zinc-700";
+  switch (kind) {
+    case "bold":
+      return (
+        <div aria-hidden className={frame}>
+          <MiniHeader dark />
+          <div className="bg-[var(--brand)] p-3">
+            <Lines light widths={["w-4/5", "w-3/5"]} />
+            <span className="mt-2 block h-3 w-12 rounded-sm bg-[var(--brand-accent)]" />
+          </div>
+          <Cards className="h-8 rounded bg-zinc-200 shadow" />
+        </div>
+      );
+    case "showcase":
+      return (
+        <div aria-hidden className={frame}>
+          <MiniHeader border="border-b-2 border-[var(--brand)]" />
+          <div className="grid grid-cols-[1fr_1.6fr] gap-2 bg-zinc-100 p-3">
+            <div className="space-y-1.5 self-center">
+              <span className="block h-2.5 w-full rounded bg-zinc-800" />
+              <span className="block h-1.5 w-3/4 rounded bg-zinc-400" />
+              <span className="mt-2 block h-2.5 w-10 rounded bg-[var(--brand)]" />
+            </div>
+            <span className="block h-16 rounded bg-gradient-to-br from-[var(--brand)] to-[var(--brand-2)]" />
+          </div>
+          <Cards count={2} className="h-10 rounded border border-zinc-200 bg-zinc-100" />
+        </div>
+      );
+    case "menu":
+      return (
+        <div aria-hidden className={`${frame} bg-[#fbf3e6]`}>
+          <MiniHeader border="border-b border-[#eadfce]" />
+          <div className="flex flex-col items-center gap-1.5 p-3">
+            <span className="block h-1.5 w-10 rounded bg-[var(--brand-2)]" />
+            <span className="block h-3 w-3/4 rounded-full bg-zinc-700" />
+          </div>
+          <div className="space-y-1.5 px-4 pb-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex items-end gap-1">
+                <span className="block h-1.5 w-10 rounded bg-zinc-700" />
+                <span className="block flex-1 border-b-2 border-dotted border-zinc-400" />
+                <span className="block h-1.5 w-5 rounded bg-[var(--brand)]" />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    case "boutique":
+      return (
+        <div aria-hidden className={frame}>
+          <MiniHeader border="" mark="rounded-none" centre />
+          <div className="flex flex-col items-center gap-1.5 px-3 py-4">
+            <span className="block h-2.5 w-2/3 bg-zinc-700" />
+            <span className="block h-1 w-1/3 bg-zinc-300" />
+          </div>
+          <Cards count={4} className="aspect-square bg-zinc-100" />
+        </div>
+      );
+    case "ministry":
+      return (
+        <div aria-hidden className={frame}>
+          <MiniHeader />
+          <div className="bg-gradient-to-b from-[color-mix(in_oklab,var(--brand)_22%,white)] to-white px-3 py-4">
+            <Lines centre widths={["w-2/3"]} />
+            <span className="mx-auto mt-2 block h-3 w-12 rounded-full bg-[var(--brand)]" />
+          </div>
+          <Cards className="h-7 rounded-full bg-[color-mix(in_oklab,var(--brand)_12%,white)]" />
+        </div>
+      );
+    case "cause":
+      return (
+        <div aria-hidden className={frame}>
+          <MiniHeader border="border-b-2 border-[var(--brand-accent)]" />
+          <div className="border-b-4 border-[var(--brand-accent)] bg-[var(--brand)] p-3">
+            <Lines light widths={["w-4/5", "w-1/2"]} />
+          </div>
+          <div className="grid grid-cols-3 gap-1.5 bg-[var(--brand-accent)] p-3">
+            {[0, 1, 2].map((i) => <span key={i} className="mx-auto block h-4 w-8 rounded-sm bg-white/90" />)}
+          </div>
+        </div>
+      );
+    case "academy":
+      return (
+        <div aria-hidden className={frame}>
+          <div className="border-t-2 border-[var(--brand-2)]">
+            <MiniHeader mark="rounded-b-full" />
+          </div>
+          <div className="grid grid-cols-[1.2fr_1fr] gap-2 bg-[var(--brand)] p-3">
+            <Lines light widths={["w-11/12", "w-2/3"]} />
+            <span className="block rounded-sm border-2 border-[var(--brand-2)] bg-white/20" />
+          </div>
+          <div className="space-y-1 p-3">
+            {[0, 1].map((i) => <span key={i} className="block h-3 border-l-4 border-[var(--brand)] bg-zinc-100" />)}
+          </div>
+        </div>
+      );
+    case "consult":
+      return (
+        <div aria-hidden className={frame}>
+          <MiniHeader />
+          <div className="grid grid-cols-2">
+            <div className="bg-zinc-100 p-3">
+              <span className="mb-1.5 block h-0.5 w-4 bg-[var(--brand)]" />
+              <Lines widths={["w-full", "w-3/4"]} />
+            </div>
+            <div className="p-3">
+              <span className="block h-full min-h-10 rounded-sm bg-gradient-to-br from-[var(--brand)] to-zinc-800" />
+            </div>
+          </div>
+          <Cards className="h-8 rounded-sm border border-zinc-300" />
+        </div>
+      );
+    default:
+      return (
+        <div aria-hidden className={frame}>
+          <MiniHeader />
+          <div className="grid grid-cols-[1.2fr_1fr] gap-2 bg-gradient-to-b from-zinc-100 to-white p-3">
+            <div>
+              <Lines />
+              <span className="mt-2 block h-3 w-12 rounded bg-[var(--brand)]" />
+            </div>
+            <span className="block rounded bg-[var(--brand)] opacity-80" />
+          </div>
+          <Cards />
+        </div>
+      );
+  }
 }
 
 export default async function WebsitePage({ params, searchParams }: PageProps<"/e/[slug]/website">) {
@@ -86,8 +219,17 @@ export default async function WebsitePage({ params, searchParams }: PageProps<"/
         [ctx.company.id],
       )
     ).rows[0];
-    return { settings, pages, total, domain };
+    // The template that suits the company's industry, if it chose one.
+    const industry = (
+      await q<{ template: string | null; name: string | null }>(
+        `select i.website_template as template, i.name from public.companies c
+         left join public.industries i on i.code = c.industry_code where c.id = $1`,
+        [ctx.company.id],
+      )
+    ).rows[0];
+    return { settings, pages, total, domain, industry };
   });
+  const suggested = isTemplate(data.industry?.template) ? data.industry.template : null;
 
   const h = await headers();
   const origin = siteOrigin(slug, platformDomain(), h.get("host"), requestProtocol(h.get("x-forwarded-proto")));
@@ -197,18 +339,32 @@ export default async function WebsitePage({ params, searchParams }: PageProps<"/
 
               <Card title="Look">
                 <form action={setTemplate.bind(null, slug)} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    {(["classic", "bold"] as const).map((t) => (
-                      <label key={t} className="block cursor-pointer text-sm">
-                        <input type="radio" name="template" value={t} defaultChecked={s.template === t} className="peer sr-only" disabled={!canEdit} />
-                        <span className="block rounded-[var(--radius)] p-1 ring-2 ring-transparent peer-checked:ring-[var(--brand)] peer-focus-visible:ring-zinc-400">
-                          <TemplatePicture kind={t} />
-                        </span>
-                        <span className="mt-1.5 block font-semibold">{t === "classic" ? "Classic" : "Bold"}</span>
-                        <span className="block text-xs text-zinc-500">{t === "classic" ? "Light, calm and refined." : "Big type and strong colour."}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <fieldset>
+                    <legend className="sr-only">Template</legend>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-2">
+                      {TEMPLATES.map((t) => (
+                        <label key={t.code} className="block cursor-pointer text-sm">
+                          <input type="radio" name="template" value={t.code} defaultChecked={s.template === t.code} className="peer sr-only" disabled={!canEdit} />
+                          <span className="block rounded-[var(--radius)] p-1 ring-2 ring-transparent peer-checked:ring-[var(--brand)] peer-focus-visible:ring-zinc-400">
+                            <TemplatePicture kind={t.code} />
+                          </span>
+                          <span className="mt-1.5 flex flex-wrap items-center gap-1.5 font-semibold">
+                            {t.label}
+                            {s.template === t.code ? <Badge tone="ok">In use</Badge> : null}
+                            {suggested === t.code ? <Badge tone="info">Suggested</Badge> : null}
+                          </span>
+                          <span className="block text-xs text-zinc-500">{t.description}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                  {suggested && data.industry?.name ? (
+                    <p className="text-xs text-zinc-500">
+                      “Suggested” is the look made for your kind of organisation ({data.industry.name}). Changing the look keeps all your pages and words.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-zinc-500">Changing the look keeps all your pages and words.</p>
+                  )}
                   {canEdit ? (
                     <Button type="submit" variant="secondary" className="w-full">
                       Use this look

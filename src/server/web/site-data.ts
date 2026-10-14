@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { cleanBlocks, type Block } from "@/lib/site/blocks";
-import { assetUrl, type SiteBranding, type Template } from "@/lib/site/theme";
+import { assetUrl, isTemplate, type SiteBranding, type Template } from "@/lib/site/theme";
 import type { CompanyContext } from "../company";
 import { withUser } from "../data";
 import { withAnon } from "./anon";
@@ -34,7 +34,8 @@ export interface SiteView {
   branding: SiteBranding;
   settings: SiteSettings;
   menu: Array<{ slug: string; title: string }>;
-  features: { addToQuote: boolean; buy: boolean; portal: boolean };
+  /** hasProducts: at least one product is shown online (the shop has something in it). */
+  features: { addToQuote: boolean; buy: boolean; portal: boolean; hasProducts: boolean };
 }
 
 export interface SitePage {
@@ -71,7 +72,7 @@ const s = (v: unknown): string | null => (typeof v === "string" && v ? v : null)
 function toSettings(raw: Json | undefined): SiteSettings {
   const r = raw ?? {};
   return {
-    template: r.template === "bold" ? "bold" : "classic",
+    template: isTemplate(r.template) ? r.template : "classic",
     tagline: s(r.tagline),
     about: s(r.about),
     contactPhone: s(r.contact_phone),
@@ -112,8 +113,14 @@ const toProduct = (r: ProductRow): SiteProduct => ({
 
 /** The site for a company slug, or null for unknown or inactive companies. Cached per request. */
 export const publicSite = cache(async (slug: string): Promise<SiteView | null> => {
-  const b = await withAnon(async (q) => (await q<{ b: Json | null }>("select public.site_bundle($1) as b", [slug])).rows[0]?.b);
-  if (!b) return null;
+  const found = await withAnon(async (q) => {
+    const bundle = (await q<{ b: Json | null }>("select public.site_bundle($1) as b", [slug])).rows[0]?.b;
+    if (!bundle) return null;
+    const any = (await q<{ n: string }>("select count(*) as n from public.site_products($1, null, 1)", [slug])).rows[0];
+    return { bundle, hasProducts: Number(any?.n ?? 0) > 0 };
+  });
+  if (!found) return null;
+  const b = found.bundle;
   const company = b.company as Json;
   const features = (b.features ?? {}) as Json;
   return {
@@ -126,7 +133,12 @@ export const publicSite = cache(async (slug: string): Promise<SiteView | null> =
     branding: toBranding((b.branding ?? {}) as Json),
     settings: toSettings(b.settings as Json),
     menu: ((b.menu as Array<{ slug: string; title: string }>) ?? []).map((m) => ({ slug: m.slug, title: m.title })),
-    features: { addToQuote: features.add_to_quote === true, buy: features.buy === true, portal: features.portal === true },
+    features: {
+      addToQuote: features.add_to_quote === true,
+      buy: features.buy === true,
+      portal: features.portal === true,
+      hasProducts: found.hasProducts,
+    },
   };
 });
 
@@ -168,9 +180,10 @@ export async function previewSite(ctx: CompanyContext): Promise<SiteView> {
       )
     ).rows;
     const flags = (
-      await q<{ add_to_quote: boolean; buy: boolean; portal: boolean }>(
+      await q<{ add_to_quote: boolean; buy: boolean; portal: boolean; has_products: boolean }>(
         `select app.feature_on($1, 'website.add_to_quote') as add_to_quote, app.feature_on($1, 'website.buy') as buy,
-                app.module_on($1, 'portal') as portal`,
+                app.module_on($1, 'portal') as portal,
+                exists (select 1 from public.products p where p.company_id = $1 and p.show_online and p.archived_at is null) as has_products`,
         [ctx.company.id],
       )
     ).rows[0];
@@ -185,7 +198,7 @@ export async function previewSite(ctx: CompanyContext): Promise<SiteView> {
       branding: toBranding(branding),
       settings: toSettings(settings ?? {}),
       menu,
-      features: { addToQuote: flags.add_to_quote, buy: flags.buy, portal: flags.portal },
+      features: { addToQuote: flags.add_to_quote, buy: flags.buy, portal: flags.portal, hasProducts: flags.has_products },
     };
   });
 }

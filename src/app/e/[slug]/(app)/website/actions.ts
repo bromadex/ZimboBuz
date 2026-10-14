@@ -16,7 +16,7 @@ import {
   type Block,
   type BlockType,
 } from "@/lib/site/blocks";
-import { cleanSocialLinks, SOCIAL_NETWORKS } from "@/lib/site/theme";
+import { cleanSocialLinks, isTemplate, SOCIAL_NETWORKS } from "@/lib/site/theme";
 import { saveImage } from "@/server/web/uploads";
 
 // Website screen actions (P9): site settings, template, going live, pages,
@@ -71,7 +71,8 @@ export async function saveSiteSettings(slug: string, form: FormData): Promise<ne
 export async function setTemplate(slug: string, form: FormData): Promise<never> {
   const template = text(form, "template");
   return act(slug, "/website", "Template changed. Your site uses it straight away.", async (q, ctx) => {
-    if (template !== "classic" && template !== "bold") throw new UserError("Please choose a template.");
+    // Only the look changes: pages and their content stay as they are.
+    if (!isTemplate(template)) throw new UserError("Please choose a template.");
     await changed(q("update public.site_settings set template = $2 where company_id = $1", [ctx.company.id, template]));
   });
 }
