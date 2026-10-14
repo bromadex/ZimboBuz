@@ -47,7 +47,14 @@ export interface TenderPlan {
  * tender covers what is left (rounded up in its currency), cash over-payment
  * becomes change in the same currency.
  */
-export function planTenders(totalCents: number, saleCurrency: Currency, tenders: Tender[], rates: Rates): TenderPlan {
+export function planTenders(
+  totalCents: number,
+  saleCurrency: Currency,
+  tenders: Tender[],
+  rates: Rates,
+  /** Give cash change in this currency instead of the one handed over. */
+  changeCurrency?: Currency,
+): TenderPlan {
   let remaining = totalCents;
   const change: TenderPlan["change"] = [];
   const problems: string[] = [];
@@ -71,7 +78,13 @@ export function planTenders(totalCents: number, saleCurrency: Currency, tenders:
     const left = t.amountCents - used;
     if (left > 0) {
       if (t.method !== "cash") problems.push("Card and mobile money payments cannot be more than the amount due.");
-      else change.push({ currency: t.currency, cents: left });
+      else if (changeCurrency && changeCurrency !== t.currency) {
+        try {
+          change.push({ currency: changeCurrency, cents: convert(left, t.currency, changeCurrency, rates) });
+        } catch {
+          problems.push(`Set an exchange rate for ${changeCurrency} first.`);
+        }
+      } else change.push({ currency: t.currency, cents: left });
     }
     if (used > 0) {
       const applied = t.currency === saleCurrency ? used : convert(used, t.currency, saleCurrency, rates);

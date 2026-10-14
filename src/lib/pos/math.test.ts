@@ -36,6 +36,10 @@ describe("till arithmetic", () => {
     expect(plan).toEqual({ remainingCents: 0, change: [{ currency: "ZWG", cents: 3312 }], problems: [] });
   });
 
+  it("gives change in another currency at the company rate", () => {
+    expect(planTenders(100, "USD", [{ method: "cash", currency: "USD", amountCents: 500 }], rates, "ZWG").change).toEqual([{ currency: "ZWG", cents: 10700 }]);
+  });
+
   it("reports short payment and card overpayment", () => {
     expect(planTenders(1000, "USD", [{ method: "cash", currency: "USD", amountCents: 400 }], rates).remainingCents).toBe(600);
     expect(planTenders(1000, "USD", [{ method: "card", currency: "USD", amountCents: 1200 }], rates).problems).toHaveLength(1);

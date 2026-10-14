@@ -36,8 +36,12 @@ function openTill(user: string, float: Record<string, number> = { USD: 2000 }): 
   return committed(user, "insert into public.till_sessions (company_id, branch_id, opening_float) values ($1, $2, $3) returning id", [company, branch, float]);
 }
 
-function checkout(user: string, session: string, args: { lines: unknown[]; tenders: unknown[]; currency?: string; customer?: string | null; credit?: boolean; onAccount?: boolean; ref?: string }) {
-  return committed<Result>(user, "select public.pos_checkout($1, $2, $3, $4, $5, $6, $7, $8) as r", [
+function checkout(
+  user: string,
+  session: string,
+  args: { lines: unknown[]; tenders: unknown[]; currency?: string; customer?: string | null; credit?: boolean; onAccount?: boolean; ref?: string; changeIn?: string },
+) {
+  return committed<Result>(user, "select public.pos_checkout($1, $2, $3, $4, $5, $6, $7, $8, $9) as r", [
     session,
     args.ref ?? randomUUID(),
     args.customer ?? null,
@@ -46,6 +50,7 @@ function checkout(user: string, session: string, args: { lines: unknown[]; tende
     JSON.stringify(args.tenders),
     args.credit ?? false,
     args.onAccount ?? false,
+    args.changeIn ?? null,
   ]);
 }
 
@@ -134,6 +139,27 @@ describe("till sales", () => {
     // change kept as the customer's credit
     const c = await checkout(owner, ownerTill, { customer, credit: true, lines: [{ product_id: bread, quantity: 1 }], tenders: [{ method: "cash", currency: "USD", amount_cents: 500 }] });
     expect(c.change).toEqual([]);
+  });
+
+  it("gives change in another currency and expects the right cash of each", async () => {
+    const till = (await admin<{ id: string }>("select id from public.till_sessions where company_id = $1 and opened_by = $2 and docstatus = 0", [company, owner])).id;
+    const before = await db.asUser(owner, async (q) => (await q("select app.till_expected_cash($1) as e", [till])).rows[0].e);
+    const r = await checkout(owner, till, {
+      changeIn: "ZWG",
+      lines: [{ product_id: bread, quantity: 1 }],
+      tenders: [{ method: "cash", currency: "USD", amount_cents: 500 }],
+    });
+    // USD 4.00 over at 26.75 = ZiG 107.00 change
+    expect(r.change).toEqual([{ currency: "ZWG", cents: 10700 }]);
+    const expected = await db.asUser(owner, async (q) => (await q("select app.till_expected_cash($1) as e", [till])).rows[0].e);
+    // the whole USD 5.00 note stays in the till; ZiG 107.00 left it
+    expect(expected.USD - (before.USD ?? 0)).toBe(500);
+    expect((expected.ZWG ?? 0) - (before.ZWG ?? 0)).toBe(-10700);
+    const pay = await admin<{ amount_cents: string }>(
+      "select p.amount_cents from public.payments p join public.payment_allocations a on a.payment_id = p.id where a.invoice_id = $1",
+      [r.invoice_id],
+    );
+    expect(pay.amount_cents).toBe("100");
   });
 
   it("only lets the cashier use their own open till", async () => {

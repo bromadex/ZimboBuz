@@ -65,6 +65,7 @@ export interface CheckoutRequest {
   tenders: Array<{ method: string; currency: string; amountCents: number; reference?: string; paymentRequestId?: string }>;
   changeAsCredit?: boolean;
   onAccount?: boolean;
+  changeCurrency?: "USD" | "ZWG" | "ZAR" | null;
 }
 
 export type CheckoutResponse =
@@ -90,7 +91,7 @@ export async function checkout(slug: string, req: CheckoutRequest): Promise<Chec
     const r = await withUser(ctx.userId, async (q) =>
       (
         await q<{ r: { invoice_id: string; number: string; currency: string; total_cents: number; change: Array<{ currency: string; cents: number }>; on_account_cents?: number; duplicate: boolean } }>(
-          "select public.pos_checkout($1, $2, $3, $4, $5, $6, $7, $8) as r",
+          "select public.pos_checkout($1, $2, $3, $4, $5, $6, $7, $8, $9) as r",
           [
             req.sessionId,
             req.clientRef,
@@ -108,6 +109,7 @@ export async function checkout(slug: string, req: CheckoutRequest): Promise<Chec
             ),
             !!req.changeAsCredit,
             !!req.onAccount,
+            req.changeCurrency && ["USD", "ZWG", "ZAR"].includes(req.changeCurrency) ? req.changeCurrency : null,
           ],
         )
       ).rows[0].r,

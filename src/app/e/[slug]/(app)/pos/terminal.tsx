@@ -95,6 +95,7 @@ export function PosTerminal({
   const [tenders, setTenders] = useState<TenderRow[]>([newTender(baseCurrency)]);
   const [changeAsCredit, setChangeAsCredit] = useState(false);
   const [onAccount, setOnAccount] = useState(false);
+  const [changeCurrency, setChangeCurrency] = useState<Currency | "">("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Extract<CheckoutResponse, { ok: true }> | { offline: true; summary: string } | null>(null);
@@ -168,7 +169,8 @@ export function PosTerminal({
   const tenderList = tenders
     .map((t) => ({ method: t.method, currency: t.currency, amountCents: cents(t.amount) ?? 0 }))
     .filter((t) => t.amountCents > 0);
-  const plan = planTenders(total, currency, tenderList, rates);
+  const plan = planTenders(total, currency, tenderList, rates, changeCurrency || undefined);
+  const cashChange = planTenders(total, currency, tenderList, rates).change.length > 0;
   const mobileUnconfirmed = tenders.some((t) => MOBILE.has(t.method) && mobileCurrencies.includes(t.currency) && (cents(t.amount) ?? 0) > 0 && t.requestStatus !== "paid");
 
   // ---- cart ----
@@ -217,6 +219,7 @@ export function PosTerminal({
     setCustomerId("");
     setChangeAsCredit(false);
     setOnAccount(false);
+    setChangeCurrency("");
     setError(null);
     clientRef.current = uuid();
     searchRef.current?.focus();
@@ -266,6 +269,7 @@ export function PosTerminal({
         .map((t) => ({ method: t.method, currency: t.currency, amountCents: cents(t.amount)!, reference: t.reference || undefined, paymentRequestId: t.requestId })),
       changeAsCredit,
       onAccount,
+      changeCurrency: changeAsCredit ? null : changeCurrency || null,
     };
     setBusy(true);
     let res: CheckoutResponse;
@@ -510,6 +514,19 @@ export function PosTerminal({
               Change: {fmt(c.cents, c.currency)}
             </p>
           ))}
+          {cashChange && !changeAsCredit ? (
+            <label className="flex items-center gap-2">
+              Give change in
+              <select value={changeCurrency} onChange={(e) => setChangeCurrency(e.target.value as Currency | "")} aria-label="Change currency" className={input}>
+                <option value="">the currency handed over</option>
+                {CURRENCIES.filter((c) => c === baseCurrency || rates[c]).map((c) => (
+                  <option key={c} value={c}>
+                    {label(c)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           {canChangeAsCredit && plan.change.length && customer ? (
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={changeAsCredit} onChange={(e) => setChangeAsCredit(e.target.checked)} />
