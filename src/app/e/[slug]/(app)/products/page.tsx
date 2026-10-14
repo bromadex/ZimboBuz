@@ -84,7 +84,7 @@ export default async function ProductsPage({ params, searchParams }: PageProps<"
   return (
     <>
       <PageHeader
-        title="Products"
+        title={ctx.terms.products}
         description={`Prices are in ${currencyLabel(base)}, your main currency. Other currencies use your exchange rates unless you set a price for them on the product.`}
       />
       <Notice error={sp.error} success={sp.success} />
@@ -135,7 +135,7 @@ export default async function ProductsPage({ params, searchParams }: PageProps<"
         </div>
 
         {canCreate ? (
-          <Card title="Add a product" className="self-start">
+          <Card title={`Add a ${ctx.terms.product.toLowerCase()}`} className="self-start">
             <form action={addProduct.bind(null, slug)} className="space-y-4">
               <Field label="Name" name="name" required placeholder="Cement 50kg" />
               <div className="grid grid-cols-2 gap-3">

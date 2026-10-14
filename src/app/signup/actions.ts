@@ -9,7 +9,7 @@ import { createSessionToken, sessionSecret } from "@/server/session";
 import { erpOrigin, platformDomain, requestProtocol } from "@/server/urls";
 
 const PLANS = new Set(["starter", "business", "growth", "pro", "enterprise"]);
-const MODULES = new Set(["pos", "sales", "inventory", "website"]);
+const MODULES = new Set(["pos", "sales", "inventory", "website", "portal"]);
 const CURRENCIES = new Set(["USD", "ZWG", "ZAR"]);
 
 // P1: sign up, create the company (with its roles, head office and brand kit)
@@ -21,9 +21,11 @@ export async function signUp(formData: FormData): Promise<never> {
   const plan = String(formData.get("plan") ?? "starter");
   const currency = String(formData.get("currency") ?? "USD");
   const modules = formData.getAll("modules").map(String).filter((m) => MODULES.has(m));
+  const industry = String(formData.get("industry") ?? "").trim() || null;
+  const sampleItems = formData.get("sample_items") === "on";
 
   const back = (error: string) => {
-    const params = new URLSearchParams({ error, email, company: name, slug, plan, currency });
+    const params = new URLSearchParams({ error, email, company: name, slug, plan, currency, industry: industry ?? "", modules: modules.join(",") });
     redirect(`/signup?${params}`);
   };
   if (!(await allow("signUp"))) back(TOO_MANY);
@@ -33,12 +35,13 @@ export async function signUp(formData: FormData): Promise<never> {
   }
   if (!PLANS.has(plan) || !CURRENCIES.has(currency)) back("Please choose a plan and a currency.");
   if (modules.length === 0) back("Please choose at least one module.");
+  if (industry && !/^[a-z_]{1,40}$/.test(industry)) back("Please choose what kind of organisation you are.");
 
   let userId = "";
   try {
     userId = await devSignIn(email);
     await withUser(userId, (q) =>
-      q("select public.create_company($1, $2, $3, $4::text[], $5)", [name, slug, plan, modules, currency]),
+      q("select public.create_company($1, $2, $3, $4::text[], $5, $6, $7)", [name, slug, plan, modules, currency, industry, sampleItems]),
     );
   } catch (error) {
     back(error instanceof Error && error.message.startsWith("Please") ? error.message : friendlyError(error));

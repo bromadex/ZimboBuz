@@ -1,3 +1,5 @@
+import { DEFAULT_TERMS, type Terms } from "@/lib/terms";
+
 // The ERP menu. An item shows when the user has any of its permissions;
 // permissions already account for the plan, switched-off modules and features,
 // read-only companies and light users (app.can), so no other checks are needed.
@@ -64,9 +66,14 @@ export const NAV: NavGroup[] = [
   },
 ];
 
-export function visibleNav(permissions: Set<string>): NavGroup[] {
+/** Menu labels in the company's own words (a church sees Members, a school Fees). */
+const TERM_LABELS: Record<string, keyof Terms> = { "/customers": "customers", "/products": "products", "/sales/invoices": "invoices" };
+
+export function visibleNav(permissions: Set<string>, terms: Terms = DEFAULT_TERMS): NavGroup[] {
   return NAV.map((g) => ({
     ...g,
-    items: g.items.filter((i) => i.anyOf.length === 0 || i.anyOf.some((p) => permissions.has(p))),
+    items: g.items
+      .filter((i) => i.anyOf.length === 0 || i.anyOf.some((p) => permissions.has(p)))
+      .map((i) => (TERM_LABELS[i.href] ? { ...i, label: terms[TERM_LABELS[i.href]] } : i)),
   })).filter((g) => g.items.length > 0);
 }

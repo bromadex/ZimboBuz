@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { CurrencyCode } from "@/lib/money";
+import { termsFrom, type Terms } from "@/lib/terms";
 import { assetUrl } from "@/lib/site/theme";
 import { currentUserId } from "./auth";
 import { withUser } from "./data";
@@ -33,7 +34,11 @@ export interface CompanyContext {
     baseCurrency: CurrencyCode;
     vatRegistered: boolean;
     pricesIncludeTax: boolean;
+    /** The company's industry (public.industries), if it chose one. */
+    industryCode: string | null;
   };
+  /** Words the company's industry uses (Members, Fees ...). */
+  terms: Terms;
   roleName: string;
   permissions: Set<string>;
   branding: Branding;
@@ -66,14 +71,15 @@ export const lookupCompany = cache(async (slug: string): Promise<CompanyLookup> 
       base_currency: CurrencyCode; vat_registered: boolean; prices_include_tax: boolean; role_name: string;
       primary_color: string; secondary_color: string; accent_color: string; font_pair: Branding["fontPair"];
       theme_mode: Branding["themeMode"]; corner_style: Branding["cornerStyle"];
-      motion_level: Branding["motionLevel"]; logo_path: string | null;
+      motion_level: Branding["motionLevel"]; logo_path: string | null; industry_code: string | null; terms: unknown;
     }>(
       `select c.id, c.name, c.slug, c.plan_code, pl.name as plan_name, c.status, c.base_currency,
               c.vat_registered, c.prices_include_tax, r.name as role_name,
               b.primary_color, b.secondary_color, b.accent_color, b.font_pair, b.theme_mode, b.corner_style,
-              b.motion_level, b.logo_path
+              b.motion_level, b.logo_path, c.industry_code, i.terms
        from public.companies c
        join public.plans pl on pl.code = c.plan_code
+       left join public.industries i on i.code = c.industry_code
        join public.memberships m on m.company_id = c.id and m.user_id = auth.uid()
        join public.roles r on r.id = m.role_id
        left join public.company_branding b on b.company_id = c.id
@@ -112,7 +118,9 @@ export const lookupCompany = cache(async (slug: string): Promise<CompanyLookup> 
         baseCurrency: row.base_currency.trim() as CurrencyCode,
         vatRegistered: row.vat_registered,
         pricesIncludeTax: row.prices_include_tax,
+        industryCode: row.industry_code,
       },
+      terms: termsFrom(row.terms),
       roleName: row.role_name,
       permissions,
       twoStep: { enabled, required: requires && hasAdminPermission(permissions) && twoStepAvailable() },

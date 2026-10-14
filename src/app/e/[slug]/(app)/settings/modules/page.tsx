@@ -1,7 +1,8 @@
-import { Card, Notice, PageHeader } from "@/components/ui";
+import { Button, Card, Notice, PageHeader, SelectField } from "@/components/ui";
 import { requirePermission } from "@/server/company";
 import { withUser } from "@/server/data";
-import { setFeature, setModule } from "../../../actions";
+import { listIndustries } from "@/server/industries";
+import { applySuggestedModules, setFeature, setIndustry, setModule } from "../../../actions";
 
 // P2: choose modules, then switch individual features on or off. Switched-off
 // features disappear from menus and are refused by the database.
@@ -70,6 +71,10 @@ export default async function ModulesPage({ params, searchParams }: PageProps<"/
     return { modules, features, limit };
   });
   const counted = modules.filter((m) => m.enabled && m.counts_toward_limit).length;
+  const industries = await listIndustries();
+  const industry = industries.find((i) => i.code === ctx.company.industryCode);
+  const suggested = new Set(industry?.suggestedModules ?? []);
+  const missing = modules.filter((m) => suggested.has(m.code) && m.on_plan && !m.enabled);
 
   return (
     <>
@@ -82,6 +87,33 @@ export default async function ModulesPage({ params, searchParams }: PageProps<"/
         }
       />
       <Notice error={sp.error} success={sp.success} />
+      <Card title="Your industry" className="mb-4">
+        <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
+          We suggest modules, a website template and the words used on screens (for example Members or Fees) from your industry. Changing it does not switch anything off.
+        </p>
+        <form action={setIndustry.bind(null, slug)} className="flex flex-wrap items-end gap-3">
+          <div className="min-w-64 flex-1">
+            <SelectField
+              label="What kind of organisation are you?"
+              name="industry"
+              defaultValue={ctx.company.industryCode ?? ""}
+              options={[
+                ...(ctx.company.industryCode ? [] : [{ value: "", label: "Choose…" }]),
+                ...industries.map((i) => ({ value: i.code, label: i.name })),
+              ]}
+            />
+          </div>
+          <Button type="submit" variant="secondary">Save industry</Button>
+        </form>
+        {industry && missing.length ? (
+          <form action={applySuggestedModules.bind(null, slug)} className="mt-4 flex flex-wrap items-center gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+            <p className="flex-1 text-sm">
+              Suggested for {industry.name.toLowerCase()} but switched off: {missing.map((m) => m.name).join(", ")}.
+            </p>
+            <Button type="submit">Switch them on</Button>
+          </form>
+        ) : null}
+      </Card>
       <div className="space-y-4">
         {modules.map((m) => {
           const moduleFeatures = features.filter((f) => f.module_code === m.code);
@@ -89,7 +121,14 @@ export default async function ModulesPage({ params, searchParams }: PageProps<"/
             <Card key={m.code}>
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h2 className="font-semibold">{m.name}</h2>
+                  <h2 className="font-semibold">
+                    {m.name}
+                    {suggested.has(m.code) ? (
+                      <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 align-middle text-[10px] font-semibold uppercase text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                        Suggested
+                      </span>
+                    ) : null}
+                  </h2>
                   <p className="text-sm text-zinc-500">
                     {!m.on_plan ? "Not included in your plan. Upgrade to use it." : m.enabled ? "On" : "Off"}
                   </p>

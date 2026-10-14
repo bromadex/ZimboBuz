@@ -53,7 +53,7 @@ export default async function ErpLayout({ children, params }: LayoutProps<"/e/[s
     "--radius": RADII[branding.cornerStyle],
     fontFamily: FONTS[branding.fontPair],
   } as CSSProperties;
-  const groups = visibleNav(ctx.permissions);
+  const groups = visibleNav(ctx.permissions, ctx.terms);
   const theme = branding.themeMode === "system" ? "" : branding.themeMode === "dark" ? "dark bg-zinc-950 text-zinc-100" : "bg-white text-zinc-900";
 
   return (

@@ -138,6 +138,34 @@ export async function setFeature(slug: string, formData: FormData): Promise<neve
   );
 }
 
+// The company's industry: changes the suggestions and the words used, never
+// switches modules by itself.
+export async function setIndustry(slug: string, formData: FormData): Promise<never> {
+  return act(slug, "/settings/modules", "Industry saved. Suggestions below are updated.", async (q, { company: { id: companyId } }) => {
+    const code = text(formData, "industry");
+    if (!(await q("select 1 from public.industries where code = $1", [code])).rowCount) throw new UserError("Please choose an industry.");
+    await changed(q("update public.companies set industry_code = $2 where id = $1", [companyId, code]));
+  });
+}
+
+// Switches on every module the industry suggests that the plan includes.
+// Modules already on stay on.
+export async function applySuggestedModules(slug: string): Promise<never> {
+  return act(slug, "/settings/modules", "Suggested modules switched on.", (q, { company: { id: companyId } }) =>
+    q(
+      `insert into public.company_modules (company_id, module_code, enabled)
+       select c.id, m, true
+       from public.companies c
+       join public.industries i on i.code = c.industry_code
+       cross join unnest(i.suggested_modules) m
+       where c.id = $1
+         and exists (select 1 from public.plan_modules pm where pm.plan_code = c.plan_code and pm.module_code = m)
+       on conflict (company_id, module_code) do update set enabled = true`,
+      [companyId],
+    ),
+  );
+}
+
 // --- Branding (P20) ---------------------------------------------------------
 
 export async function saveBranding(slug: string, formData: FormData): Promise<never> {

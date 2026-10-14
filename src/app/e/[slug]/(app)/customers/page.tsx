@@ -38,7 +38,7 @@ export default async function CustomersPage({ params, searchParams }: PageProps<
 
   return (
     <>
-      <PageHeader title="Customers" description="People and businesses you sell to. The same phone number or email is never entered twice." />
+      <PageHeader title={ctx.terms.customers} description="People and organisations you deal with. The same phone number or email is never entered twice." />
       <Notice error={sp.error} success={sp.success} />
       <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
         <ListView<Row>
@@ -69,7 +69,7 @@ export default async function CustomersPage({ params, searchParams }: PageProps<
         />
 
         {canCreate ? (
-          <Card title="Add a customer" className="self-start">
+          <Card title={`Add a ${ctx.terms.customer.toLowerCase()}`} className="self-start">
             <form action={addCustomer.bind(null, slug)} className="space-y-4">
               <Field label="Name" name="name" required placeholder="Tendai Moyo" />
               <Field label="Business name" name="company_name" hint="If they buy for a business." />

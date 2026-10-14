@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Button, Card, Field, Notice, SelectField } from "@/components/ui";
 import { authMode } from "@/server/auth";
+import { listIndustries } from "@/server/industries";
 import { platformDomain } from "@/server/urls";
 import { signUp } from "./actions";
+import { IndustryPicker } from "./industry-picker";
 
 export const metadata: Metadata = { title: "Start your business on ZimERP" };
 
@@ -10,7 +12,8 @@ const MODULES = [
   { code: "pos", name: "Point of sale", hint: "Sell at the counter in USD, ZiG and rand" },
   { code: "sales", name: "Quotes and invoicing", hint: "Quotes, invoices, payments and customer accounts" },
   { code: "inventory", name: "Inventory", hint: "Stock levels, receiving and stock takes" },
-  { code: "website", name: "Website and store", hint: "Your own website and online shop" },
+  { code: "website", name: "Website", hint: "Your own website, online shop or donations page" },
+  { code: "portal", name: "Customer portal", hint: "Customers see their invoices and statements, and pay online" },
 ];
 
 export default async function SignUpPage({ searchParams }: PageProps<"/signup">) {
@@ -18,6 +21,8 @@ export default async function SignUpPage({ searchParams }: PageProps<"/signup">)
   const value = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
   const domain = platformDomain();
   const devAuth = authMode() === "dev";
+  const industries = await listIndustries();
+  const chosenModules = typeof sp.modules === "string" ? sp.modules.split(",").filter(Boolean) : null;
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-12">
@@ -25,7 +30,7 @@ export default async function SignUpPage({ searchParams }: PageProps<"/signup">)
         Start with Zim<span className="text-emerald-700 dark:text-emerald-400">ERP</span>
       </h1>
       <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-        Set up your company in a minute. You can add modules, staff and your own domain later.
+        Set up your company in a minute. Tell us what kind of organisation you are and we will suggest what you need. You can add modules, staff and your own domain later.
       </p>
 
       <div className="mt-8">
@@ -72,24 +77,12 @@ export default async function SignUpPage({ searchParams }: PageProps<"/signup">)
                 ]}
               />
             </div>
-            <fieldset>
-              <legend className="mb-2 text-sm font-medium">What do you need?</legend>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {MODULES.map((m) => (
-                  <label
-                    key={m.code}
-                    className="flex gap-3 rounded-lg border border-zinc-200 p-3 text-sm has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50 dark:border-zinc-800 dark:has-[:checked]:bg-emerald-950"
-                  >
-                    <input type="checkbox" name="modules" value={m.code} defaultChecked={m.code === "pos"} className="mt-1" />
-                    <span>
-                      <span className="block font-medium">{m.name}</span>
-                      <span className="block text-xs text-zinc-500">{m.hint}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-              <p className="mt-2 text-xs text-zinc-500">The Starter plan includes one module; the website does not count.</p>
-            </fieldset>
+            <IndustryPicker
+              industries={industries}
+              modules={MODULES}
+              initialIndustry={value("industry") ?? "retail"}
+              initialModules={chosenModules}
+            />
             <Button type="submit" className="w-full">
               Create my company
             </Button>
