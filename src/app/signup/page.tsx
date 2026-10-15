@@ -1,27 +1,28 @@
 import type { Metadata } from "next";
 import { Button, Card, Field, Notice, SelectField } from "@/components/ui";
 import { authMode } from "@/server/auth";
-import { listIndustries } from "@/server/industries";
+import { listIndustries, listModules, listPlans } from "@/server/industries";
 import { platformDomain } from "@/server/urls";
 import { signUp } from "./actions";
 import { IndustryPicker } from "./industry-picker";
 
 export const metadata: Metadata = { title: "Start your business on ZimERP" };
 
-const MODULES = [
-  { code: "pos", name: "Point of sale", hint: "Sell at the counter in USD, ZiG and rand" },
-  { code: "sales", name: "Quotes and invoicing", hint: "Quotes, invoices, payments and customer accounts" },
-  { code: "inventory", name: "Inventory", hint: "Stock levels, receiving and stock takes" },
-  { code: "website", name: "Website", hint: "Your own website, online shop or donations page" },
-  { code: "portal", name: "Customer portal", hint: "Customers see their invoices and statements, and pay online" },
-];
+const HINTS: Record<string, string> = Object.fromEntries([
+  ["pos", "Sell at the counter in USD, ZiG and rand"],
+  ["sales", "Quotes, invoices, payments and customer accounts"],
+  ["inventory", "Stock levels, receiving and stock takes"],
+  ["website", "Your own website, online shop or donations page"],
+  ["portal", "Customers see their invoices and statements, and pay online"],
+]);
 
 export default async function SignUpPage({ searchParams }: PageProps<"/signup">) {
   const sp = await searchParams;
   const value = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
   const domain = platformDomain();
   const devAuth = authMode() === "dev";
-  const industries = await listIndustries();
+  const [industries, plans, moduleRows] = await Promise.all([listIndustries(), listPlans(), listModules()]);
+  const modules = moduleRows.map((m) => ({ ...m, hint: HINTS[m.code] }));
   const chosenModules = typeof sp.modules === "string" ? sp.modules.split(",").filter(Boolean) : null;
 
   return (
@@ -64,17 +65,6 @@ export default async function SignUpPage({ searchParams }: PageProps<"/signup">)
             />
             <div className="grid gap-5 sm:grid-cols-2">
               <SelectField
-                label="Plan"
-                name="plan"
-                defaultValue={value("plan") ?? "starter"}
-                options={[
-                  { value: "starter", label: "Starter (free, 1 user, 1 module)" },
-                  { value: "business", label: "Business (USD 29 a month)" },
-                  { value: "growth", label: "Growth (USD 79 a month)" },
-                  { value: "pro", label: "Pro (USD 199 a month)" },
-                ]}
-              />
-              <SelectField
                 label="Main currency"
                 name="currency"
                 defaultValue={value("currency") ?? "USD"}
@@ -88,7 +78,9 @@ export default async function SignUpPage({ searchParams }: PageProps<"/signup">)
             </div>
             <IndustryPicker
               industries={industries}
-              modules={MODULES}
+              modules={modules}
+              plans={plans}
+              initialPlan={value("plan") ?? "business"}
               initialIndustry={value("industry") ?? "retail"}
               initialModules={chosenModules}
             />

@@ -22,7 +22,7 @@ export const NAV: NavGroup[] = [
     label: "Sell",
     items: [
       { href: "/pos", label: "Till", anyOf: ["pos.sell"] },
-      { href: "/sales/quotes", label: "Quotes", anyOf: ["sales.view"] },
+      { href: "/sales/quotes", label: "Quotes", anyOf: ["sales.quote.create"] },
       { href: "/sales/invoices", label: "Invoices", anyOf: ["sales.view"] },
       { href: "/sales/payments", label: "Payments", anyOf: ["sales.view"] },
       { href: "/sales/credit-notes", label: "Credit notes and refunds", anyOf: ["sales.view"] },

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { wwwPartner } from "@/lib/tenancy/domains";
 import { normaliseHostname } from "@/server/adapters/domains";
 import { devSignIn } from "@/server/auth";
+import { listModules, listPlans } from "@/server/industries";
 import { allow, TOO_MANY } from "@/server/rate-limit";
 import { friendlyError, withUser } from "@/server/data";
 import { createSessionToken, sessionSecret } from "@/server/session";
@@ -12,7 +13,6 @@ import { adapters } from "@/server/web/services";
 import { erpOrigin, platformDomain, requestProtocol } from "@/server/urls";
 
 const PLANS = new Set(["starter", "business", "growth", "pro", "enterprise"]);
-const MODULES = new Set(["pos", "sales", "inventory", "website", "portal"]);
 const CURRENCIES = new Set(["USD", "ZWG", "ZAR"]);
 
 // P1: sign up, create the company (with its roles, head office and brand kit)
@@ -23,7 +23,8 @@ export async function signUp(formData: FormData): Promise<never> {
   const slug = String(formData.get("slug") ?? "").trim().toLowerCase();
   const plan = String(formData.get("plan") ?? "starter");
   const currency = String(formData.get("currency") ?? "USD");
-  const modules = formData.getAll("modules").map(String).filter((m) => MODULES.has(m));
+  const [plans, moduleRows] = await Promise.all([listPlans(), listModules()]);
+  const modules = formData.getAll("modules").map(String).filter((m) => moduleRows.some((r) => r.code === m));
   const industry = String(formData.get("industry") ?? "").trim() || null;
   const sampleItems = formData.get("sample_items") === "on";
   const ownDomainRaw = String(formData.get("own_domain") ?? "").trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
@@ -39,6 +40,15 @@ export async function signUp(formData: FormData): Promise<never> {
   }
   if (!PLANS.has(plan) || !CURRENCIES.has(currency)) back("Please choose a plan and a currency.");
   if (modules.length === 0) back("Please choose at least one module.");
+  const chosenPlan = plans.find((p) => p.code === plan);
+  if (chosenPlan) {
+    const missing = moduleRows.filter((m) => modules.includes(m.code) && !chosenPlan.modules.includes(m.code));
+    if (missing.length) back(`The ${chosenPlan.name} plan does not include ${missing.map((m) => m.name).join(", ")}. Choose a bigger plan or untick ${missing.length === 1 ? "it" : "them"}.`);
+    const counted = moduleRows.filter((m) => modules.includes(m.code) && m.countsTowardLimit).length;
+    if (chosenPlan.maxModules !== null && counted > chosenPlan.maxModules) {
+      back(`The ${chosenPlan.name} plan includes ${chosenPlan.maxModules} module${chosenPlan.maxModules === 1 ? "" : "s"}; you chose ${counted}. Choose a bigger plan or untick some.`);
+    }
+  }
   if (industry && !/^[a-z_]{1,40}$/.test(industry)) back("Please choose what kind of organisation you are.");
   let ownDomain: string | null = null;
   if (ownDomainRaw) {
