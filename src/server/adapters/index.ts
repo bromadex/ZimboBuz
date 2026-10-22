@@ -7,7 +7,7 @@ import { FakePaymentGateway } from "./payments/fake";
 import { PaynowGateway } from "./payments/paynow";
 import type { PaymentGateway } from "./payments/types";
 import { FakeRegistrar, ManualRegistrar, type DomainRegistrar } from "./registrar";
-import { FileSystemStorage, MemoryFileStorage, type FileStorage } from "./storage";
+import { FileSystemStorage, MemoryFileStorage, SupabaseStorage, type FileStorage } from "./storage";
 
 // One place that decides which implementation each adapter uses, from
 // environment variables only (no secrets in code). ADAPTERS=fake forces fakes
@@ -63,12 +63,19 @@ export function createAdapters(env: Env = process.env): Adapters {
 }
 
 /**
- * Files: on disk when STORAGE_DIR is set, or by default in development
+ * Files: Supabase Storage when STORAGE=supabase (or, unless STORAGE says
+ * otherwise, whenever the Supabase address and service role key are set); on
+ * disk when STORAGE_DIR is set, or by default in development
  * (./.data/storage); in memory for tests (ADAPTERS=fake or NODE_ENV=test) and,
  * with a warning, in production until a storage service is configured.
  */
 function chooseStorage(env: Env, forceFake: boolean, missing: string[]): FileStorage {
   if (forceFake || env.NODE_ENV === "test") return new MemoryFileStorage();
+  const supabase = env.NEXT_PUBLIC_SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY;
+  if (env.STORAGE === "supabase" || (!env.STORAGE && !env.STORAGE_DIR && supabase)) {
+    if (!supabase) throw new Error("STORAGE=supabase needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
+    return new SupabaseStorage(env.NEXT_PUBLIC_SUPABASE_URL!, env.SUPABASE_SERVICE_ROLE_KEY!, env.SUPABASE_STORAGE_BUCKET || undefined);
+  }
   if (env.STORAGE_DIR) return new FileSystemStorage(env.STORAGE_DIR);
   if (env.NODE_ENV !== "production") return new FileSystemStorage("./.data/storage");
   missing.push("storage");

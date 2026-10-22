@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { act, amount, changed, CURRENCIES, optional, text, UserError } from "@/server/act";
-import { devSignIn, endSession, startSession } from "@/server/auth";
+import { AuthError, endSession, passwordSignIn, startSession } from "@/server/auth";
 import { friendlyError } from "@/server/data";
 import { safeNextPath } from "@/server/urls";
 
@@ -15,9 +15,9 @@ export async function signIn(formData: FormData): Promise<never> {
   const next = safeNextPath(text(formData, "next"));
   let error: string | null = null;
   try {
-    await startSession(await devSignIn(text(formData, "email")));
+    await startSession(await passwordSignIn(text(formData, "email"), String(formData.get("password") ?? "")));
   } catch (e) {
-    error = e instanceof Error && e.message.startsWith("Please") ? e.message : friendlyError(e);
+    error = e instanceof AuthError || (e instanceof Error && e.message.startsWith("Please")) ? e.message : friendlyError(e);
   }
   if (error) redirect(`/sign-in?${new URLSearchParams({ error })}`);
   redirect(next);

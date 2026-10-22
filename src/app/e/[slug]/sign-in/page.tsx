@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Button, Card, Field, Notice } from "@/components/ui";
 import { authMode, twoStepUserId } from "@/server/auth";
@@ -94,11 +95,20 @@ export default async function SignInPage({ params, searchParams }: PageProps<"/e
           <Field label="Email address" name="email" type="email" required autoComplete="email" />
           {authMode() === "dev" ? (
             <p className="text-xs text-amber-700 dark:text-amber-400">Development sign-in: no password is needed.</p>
-          ) : null}
+          ) : (
+            <Field label="Password" name="password" type="password" required autoComplete="current-password" />
+          )}
           <Button type="submit" className="w-full">
             Sign in
           </Button>
         </form>
+        {authMode() === "dev" ? null : (
+          <p className="mt-4 text-center text-sm">
+            <Link href="/forgot-password" className="text-zinc-600 underline dark:text-zinc-400">
+              Forgot your password?
+            </Link>
+          </p>
+        )}
       </Card>
     </main>
   );

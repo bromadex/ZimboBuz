@@ -1,6 +1,5 @@
 import "server-only";
 import type pg from "pg";
-import { authMode } from "./auth";
 import { getPool } from "./db";
 import { open, seal } from "./secret-box";
 import { sessionSecret } from "./session";
@@ -27,8 +26,9 @@ interface Row {
   locked_until: Date | null;
 }
 
+/** Two-step sign-in is ZimERP's own, so it works with either sign-in mode. */
 export function twoStepAvailable(): boolean {
-  return authMode() === "dev";
+  return true;
 }
 
 async function inTransaction<T>(fn: (c: pg.PoolClient) => Promise<T>): Promise<T> {

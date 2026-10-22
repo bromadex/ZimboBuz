@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { authMode } from "@/server/auth";
 import { currentPortalUser } from "@/server/web/portal";
@@ -27,12 +28,29 @@ export default async function PortalSignIn({ params, searchParams }: PageProps<"
               <span>Email address</span>
               <input className="zs-input" name="email" type="email" required autoComplete="email" />
             </label>
-            {authMode() === "dev" ? <p className="zs-muted text-xs">Development sign-in: no password or email link is needed.</p> : null}
+            {authMode() === "dev" ? (
+              <p className="zs-muted text-xs">Development sign-in: no password or email link is needed.</p>
+            ) : (
+              <label className="zs-field">
+                <span>Password</span>
+                <input className="zs-input" name="password" type="password" required autoComplete="current-password" />
+              </label>
+            )}
             <button type="submit" className="zs-btn zs-btn-block">
               Sign in
             </button>
           </form>
-          <p className="zs-muted mt-5 text-sm">Use the email address we invited. No account yet? Ask us to invite you.</p>
+          <p className="zs-muted mt-5 text-sm">
+            Use the email address we invited. No account yet? Ask us to invite you.
+            {authMode() === "dev" ? null : (
+              <>
+                {" "}
+                <Link href="/account/forgot-password" className="zs-link">
+                  Forgot your password?
+                </Link>
+              </>
+            )}
+          </p>
         </div>
       </div>
     </section>

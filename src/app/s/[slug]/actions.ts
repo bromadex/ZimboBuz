@@ -5,7 +5,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { EnquiryState } from "@/components/site/enquiry-state";
 import { normaliseHost } from "@/lib/tenancy/host";
-import { devSignIn, endSession, startSession } from "@/server/auth";
+import { AuthError, completeEmailLink, endSession, passwordSignIn, requestPasswordReset, startSession } from "@/server/auth";
+import { platformOrigins } from "@/server/domains";
 import { friendlyError, withUser } from "@/server/data";
 import { getPool } from "@/server/db";
 import { withAnon } from "@/server/web/anon";
@@ -96,15 +97,53 @@ export async function portalSignIn(slug: string, form: FormData): Promise<never>
   if (!(await allow("signIn", slug))) redirect(`/account/sign-in?${new URLSearchParams({ error: TOO_MANY })}`);
   let error: string | null = null;
   try {
-    const userId = await devSignIn(email);
-    const me = await withUser(userId, async (q) => (await q<{ r: unknown }>("select public.portal_sign_in($1) as r", [slug])).rows[0].r);
-    if (!me) {
-      error = "We could not find an account for that email address. Please ask us to invite you to the customer portal.";
-    } else {
-      await startSession(userId);
-    }
+    error = await startPortalSession(slug, await passwordSignIn(email, String(form.get("password") ?? "")));
   } catch (e) {
-    error = e instanceof Error && e.message.startsWith("Please") ? e.message : friendlyError(e);
+    error = portalError(e);
+  }
+  if (error) redirect(`/account/sign-in?${new URLSearchParams({ error })}`);
+  redirect("/account");
+}
+
+function portalError(e: unknown): string {
+  if (e instanceof AuthError) return e.message;
+  return e instanceof Error && e.message.startsWith("Please") ? e.message : friendlyError(e);
+}
+
+/** Starts the session if the user is a portal customer of this company; otherwise returns why not. */
+async function startPortalSession(slug: string, userId: string): Promise<string | null> {
+  const me = await withUser(userId, async (q) => (await q<{ r: unknown }>("select public.portal_sign_in($1) as r", [slug])).rows[0].r);
+  if (!me) return "We could not find an account for that email address. Please ask us to invite you to the customer portal.";
+  await startSession(userId);
+  return null;
+}
+
+/** "Forgot your password?" for portal customers: the link comes back to /account/auth on this website. */
+export async function portalForgotPassword(slug: string, form: FormData): Promise<never> {
+  if (!(await allow("signIn", `${slug}:reset`))) redirect(`/account/forgot-password?${new URLSearchParams({ error: TOO_MANY })}`);
+  try {
+    await requestPasswordReset(String(form.get("email") ?? ""), `${(await platformOrigins(slug)).site}/account/auth`);
+  } catch (e) {
+    redirect(`/account/forgot-password?${new URLSearchParams({ error: portalError(e) })}`);
+  }
+  redirect(
+    `/account/sign-in?${new URLSearchParams({ success: "If that email address has an account, we have sent it a link to choose a new password. It works for one hour." })}`,
+  );
+}
+
+/** A link from an email (invitation, password reset, address confirmation) for a portal customer. */
+export async function portalCompleteLink(slug: string, form: FormData): Promise<never> {
+  if (!(await allow("signIn", `${slug}:link`))) redirect(`/account/sign-in?${new URLSearchParams({ error: TOO_MANY })}`);
+  const field = (k: string) => String(form.get(k) ?? "").trim();
+  let error: string | null = null;
+  try {
+    const userId = await completeEmailLink(
+      { accessToken: field("access_token"), tokenHash: field("token_hash"), type: field("type") },
+      form.has("password") ? String(form.get("password")) : null,
+    );
+    error = await startPortalSession(slug, userId);
+  } catch (e) {
+    error = portalError(e);
   }
   if (error) redirect(`/account/sign-in?${new URLSearchParams({ error })}`);
   redirect("/account");

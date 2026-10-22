@@ -11,7 +11,7 @@ Also read `AGENTS.md`: this Next.js version differs from older ones; check `node
 - `supabase/deploy/` — applies migrations to the real Supabase project and checks it; run by `.github/workflows/supabase.yml` (secret `SUPABASE_DB_URL`)
 - `supabase/tests/supabase_shim.sql` — stand-in for Supabase's `auth` schema and roles, used only by tests
 - `tests/db/` — database tests (vitest + pg) run against a fresh PostgreSQL database per file
-- `docs/` — plan documents; `docs/pdf-build/` regenerates the master plan PDF
+- `docs/` — plan documents; `docs/pdf-build/` regenerates the master plan PDF; `docs/supabase-setup.md` connects the app to Supabase
 
 ## Commands
 

@@ -109,3 +109,94 @@ export class MemoryFileStorage implements FileStorage {
     return `memory://${key}?expires=${expires}`;
   }
 }
+
+type StorageFetch = (input: string, init?: RequestInit) => Promise<Response>;
+
+/**
+ * Files in Supabase Storage (a private bucket, default "zimerp-files"), using
+ * the service role key on the server only. Visitors never get Supabase links:
+ * the application decides what is public and serves it (src/app/api/files).
+ * The bucket is created on first use.
+ */
+export class SupabaseStorage implements FileStorage {
+  readonly name = "supabase";
+  private readonly base: string;
+  private bucketReady: Promise<void> | null = null;
+
+  constructor(
+    url: string,
+    private readonly serviceKey: string,
+    private readonly bucket = "zimerp-files",
+    private readonly fetchImpl: StorageFetch = (input, init) => fetch(input, init),
+  ) {
+    if (!/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(bucket)) throw new Error("invalid storage bucket name");
+    this.base = `${url.replace(/\/+$/, "")}/storage/v1`;
+  }
+
+  private headers(extra: Record<string, string> = {}) {
+    return { apikey: this.serviceKey, authorization: `Bearer ${this.serviceKey}`, ...extra };
+  }
+
+  private objectUrl(key: string) {
+    if (!isValidKey(key)) throw new Error("invalid file key");
+    return `${this.base}/object/${this.bucket}/${key.split("/").map(encodeURIComponent).join("/")}`;
+  }
+
+  private ensureBucket(): Promise<void> {
+    this.bucketReady ??= (async () => {
+      const found = await this.fetchImpl(`${this.base}/bucket/${this.bucket}`, { headers: this.headers() });
+      if (found.ok) return;
+      const made = await this.fetchImpl(`${this.base}/bucket`, {
+        method: "POST",
+        headers: this.headers({ "content-type": "application/json" }),
+        body: JSON.stringify({ id: this.bucket, name: this.bucket, public: false, file_size_limit: 10 * 1024 * 1024 }),
+      });
+      // Someone else may have created it in the meantime.
+      if (!made.ok && made.status !== 409) {
+        const text = await made.text();
+        if (!/already exists/i.test(text)) throw new Error(`could not create the storage bucket (HTTP ${made.status})`);
+      }
+    })().catch((e) => {
+      this.bucketReady = null;
+      throw e;
+    });
+    return this.bucketReady;
+  }
+
+  async put(companyId: string, filePath: string, body: Uint8Array, contentType: string) {
+    const key = companyKey(companyId, filePath);
+    if (!/^[a-z]+\/[a-z0-9.+-]+$/i.test(contentType)) throw new Error("invalid content type");
+    await this.ensureBucket();
+    const res = await this.fetchImpl(this.objectUrl(key), {
+      method: "POST",
+      headers: this.headers({ "content-type": contentType, "x-upsert": "false", "cache-control": "max-age=31536000" }),
+      body: Buffer.from(body),
+    });
+    if (!res.ok) throw new Error(`could not store the file (HTTP ${res.status})`);
+    return { key, contentType, size: body.byteLength };
+  }
+
+  async get(key: string) {
+    let url: string;
+    try {
+      url = this.objectUrl(key);
+    } catch {
+      return null;
+    }
+    const res = await this.fetchImpl(url, { headers: this.headers() });
+    if (res.status === 400 || res.status === 404) return null;
+    if (!res.ok) throw new Error(`could not read the file (HTTP ${res.status})`);
+    return { body: new Uint8Array(await res.arrayBuffer()), contentType: res.headers.get("content-type") ?? "application/octet-stream" };
+  }
+
+  async signedUrl(key: string, expiresInSeconds: number) {
+    const res = await this.fetchImpl(`${this.base}/object/sign/${this.bucket}/${key.split("/").map(encodeURIComponent).join("/")}`, {
+      method: "POST",
+      headers: this.headers({ "content-type": "application/json" }),
+      body: JSON.stringify({ expiresIn: Math.max(1, Math.min(expiresInSeconds, 7 * 24 * 3600)) }),
+    });
+    if (!res.ok) throw new Error(`could not make a link to the file (HTTP ${res.status})`);
+    const { signedURL } = (await res.json()) as { signedURL: string };
+    return `${this.base}${signedURL.startsWith("/") ? "" : "/"}${signedURL}`;
+  }
+}

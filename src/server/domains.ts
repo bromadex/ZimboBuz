@@ -26,3 +26,16 @@ export async function companyOrigins(slug: string): Promise<{ site: string; erp:
     erp: erp ? `https://${erp}` : erpOrigin(slug, platform, h.get("host"), protocol),
   };
 }
+
+/**
+ * The company's free ZimERP addresses, for links in sign-in emails: Supabase
+ * only sends people back to allowed addresses, and one wildcard covers these
+ * (an own main domain still works: the router forwards there, and the
+ * browser keeps the link details).
+ */
+export async function platformOrigins(slug: string): Promise<{ site: string; erp: string }> {
+  const h = await headers();
+  const protocol = requestProtocol(h.get("x-forwarded-proto"));
+  const platform = platformDomain();
+  return { site: siteOrigin(slug, platform, h.get("host"), protocol), erp: erpOrigin(slug, platform, h.get("host"), protocol) };
+}

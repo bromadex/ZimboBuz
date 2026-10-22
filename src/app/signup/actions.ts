@@ -4,7 +4,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { wwwPartner } from "@/lib/tenancy/domains";
 import { normaliseHostname } from "@/server/adapters/domains";
-import { devSignIn } from "@/server/auth";
+import { AuthError, createAccount, passwordSignIn } from "@/server/auth";
+import { getPool } from "@/server/db";
 import { listModules, listPlans } from "@/server/industries";
 import { allow, TOO_MANY } from "@/server/rate-limit";
 import { friendlyError, withUser } from "@/server/data";
@@ -63,9 +64,27 @@ export async function signUp(formData: FormData): Promise<never> {
     }
   }
 
+  const password = String(formData.get("password") ?? "");
+  const h = await headers();
+  const platform = platformDomain();
+  const origin = erpOrigin(slug, platform, h.get("host"), requestProtocol(h.get("x-forwarded-proto")));
+
+  // Refuse a taken address before creating an account, so a retry with
+  // another address does not find the email "already registered".
+  if ((await getPool().query("select 1 from public.companies where slug = $1", [slug])).rowCount) {
+    back("That web address is already taken. Please choose another.");
+  }
+
   let userId = "";
+  let needsConfirmation = false;
   try {
-    userId = await devSignIn(email);
+    try {
+      ({ userId, needsConfirmation } = await createAccount(email, password, `${origin}/auth/callback`));
+    } catch (e) {
+      // Someone with a ZimERP account starting another company: their password must match.
+      if (!(e instanceof AuthError && e.code === "user_already_exists")) throw e;
+      userId = await passwordSignIn(email, password);
+    }
     await withUser(userId, async (q) => {
       const company = (
         await q<{ id: string }>("select public.create_company($1, $2, $3, $4::text[], $5, $6, $7) as id", [name, slug, plan, modules, currency, industry, sampleItems])
@@ -85,12 +104,13 @@ export async function signUp(formData: FormData): Promise<never> {
       for (const n of [ownDomain, wwwPartner(ownDomain)]) if (n) await adapters().domains.addDomain(n).catch(() => null);
     }
   } catch (error) {
+    if (error instanceof AuthError) back(error.message);
     back(error instanceof Error && error.message.startsWith("Please") ? error.message : friendlyError(error));
   }
 
-  const h = await headers();
-  const platform = platformDomain();
-  const origin = erpOrigin(slug, platform, h.get("host"), requestProtocol(h.get("x-forwarded-proto")));
+  // Supabase asked them to confirm their email address first; the link signs them in.
+  if (needsConfirmation) redirect(`/signup/check-email?${new URLSearchParams({ email, address: `${origin.replace(/^https?:\/\//, "")}` })}`);
+
   // Cookies belong to one host, so the ERP host signs the owner in from a
   // short-lived token that only it accepts.
   const token = createSessionToken(userId, sessionSecret(), 120, Date.now(), `erp.${slug}.${platform}`);

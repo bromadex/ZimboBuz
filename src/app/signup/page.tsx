@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Button, Card, Field, Notice, SelectField } from "@/components/ui";
+import { MIN_PASSWORD } from "@/server/adapters/supabase-auth";
 import { authMode } from "@/server/auth";
 import { listIndustries, listModules, listPlans } from "@/server/industries";
 import { platformDomain } from "@/server/urls";
@@ -43,7 +44,18 @@ export default async function SignUpPage({ searchParams }: PageProps<"/signup">)
               <p className="-mt-3 text-xs text-amber-700 dark:text-amber-400">
                 Development sign-in: no password is needed. This is switched off in production.
               </p>
-            ) : null}
+            ) : (
+              <Field
+                label="Password"
+                name="password"
+                type="password"
+                required
+                minLength={MIN_PASSWORD}
+                maxLength={72}
+                autoComplete="new-password"
+                hint={`At least ${MIN_PASSWORD} characters. Already have a ZimERP account? Use the same email and password.`}
+              />
+            )}
             <Field label="Company name" name="company" required defaultValue={value("company")} placeholder="Mhofu Hardware" />
             <Field
               label="Web address"

@@ -47,4 +47,12 @@ describe("wave 3 and 4 catalogue", () => {
     );
     expect(rows).toEqual([]);
   });
+
+  it("keeps industry suggestions in priority order", async () => {
+    const order = async (code: string) =>
+      (await db.admin.query<{ m: string[] }>("select suggested_modules as m from public.industries where code = $1", [code])).rows[0].m;
+    expect((await order("hardware")).slice(0, 3)).toEqual(["pos", "sales", "inventory"]);
+    expect((await order("auto")).slice(0, 2)).toEqual(["pos", "garage"]);
+    expect(await order("church")).toEqual(["sales", "events", "website"]);
+  });
 });

@@ -58,4 +58,13 @@ describe("industries", () => {
     expect(await change(cashier)).toBe(0);
     expect(await change(owner)).toBe(1);
   });
+
+  it("makes starter items stock items only when the company has inventory", async () => {
+    const without = await createCompanyAs(db, owner, { slug: "hw-no-stock", plan: "business", modules: ["pos", "sales"], industry: "hardware", sampleItems: true });
+    const withInv = await createCompanyAs(db, owner, { slug: "hw-stock", plan: "business", modules: ["pos", "inventory"], industry: "hardware", sampleItems: true });
+    const stock = async (company: string) =>
+      (await db.admin.query("select bool_or(is_stock_item) as any from public.products where company_id = $1", [company])).rows[0].any;
+    expect(await stock(without)).toBe(false);
+    expect(await stock(withInv)).toBe(true);
+  });
 });

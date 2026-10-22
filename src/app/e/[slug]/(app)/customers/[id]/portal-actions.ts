@@ -1,29 +1,15 @@
 "use server";
 
 import { act, text, UserError } from "@/server/act";
-import { authMode } from "@/server/auth";
+import { AuthError, userForInvitation } from "@/server/auth";
 import { getPool } from "@/server/db";
-import { companyOrigins } from "@/server/domains";
+import { companyOrigins, platformOrigins } from "@/server/domains";
 import { platformDomain } from "@/server/urls";
 import { adapters } from "@/server/web/services";
 
 // Customer portal access (P19), from the customer's page in the ERP. Needs
 // portal.manage (which already requires the portal module on the plan and
 // switched on); row-level security enforces it.
-
-/**
- * The sign-in for an email address, created if new. Development sign-in
- * creates it directly; with Supabase sign-in this becomes Supabase's
- * "invite user" call (issue #18).
- */
-async function userForEmail(email: string): Promise<string> {
-  if (authMode() !== "dev") throw new UserError("Inviting customers needs Supabase sign-in, which is not connected yet.");
-  const pool = getPool();
-  const existing = await pool.query<{ id: string }>("select id from auth.users where lower(email) = $1", [email]);
-  if (existing.rows[0]) return existing.rows[0].id;
-  const { rows } = await pool.query<{ id: string }>("insert into auth.users (id, email) values (gen_random_uuid(), $1) returning id", [email]);
-  return rows[0].id;
-}
 
 export async function invitePortalUser(slug: string, customerId: string, form: FormData): Promise<never> {
   const back = `/customers/${customerId}`;
@@ -41,7 +27,17 @@ export async function invitePortalUser(slug: string, customerId: string, form: F
       ).rows[0];
       if (!customer) throw new UserError("That customer no longer exists.");
 
-      const userId = await userForEmail(email);
+      // A new customer gets an email from Supabase with a link to choose a
+      // password; someone who already has an account just signs in.
+      const site = (await companyOrigins(slug)).site;
+      const linkBack = `${(await platformOrigins(slug)).site}/account/auth`;
+      let account: { id: string; emailed: boolean };
+      try {
+        account = await userForInvitation(email, linkBack);
+      } catch (e) {
+        throw new UserError(e instanceof AuthError ? e.message : "We could not invite that email address. Please try again.");
+      }
+      const userId = account.id;
       if ((await getPool().query("select 1 from public.memberships where company_id = $1 and user_id = $2", [ctx.company.id, userId])).rowCount) {
         throw new UserError("That email belongs to one of your staff. Please use the customer's own email address.");
       }
@@ -59,7 +55,11 @@ export async function invitePortalUser(slug: string, customerId: string, form: F
         await q("insert into public.portal_users (company_id, customer_id, user_id) values ($1, $2, $3)", [ctx.company.id, customerId, userId]);
       }
 
-      const link = `${(await companyOrigins(slug)).site}/account/sign-in`;
+      const link = `${site}/account/sign-in`;
+      if (account.emailed) {
+        notice = `Invitation emailed to ${email}. They choose a password from the link, then see their account.`;
+        return;
+      }
       try {
         await adapters().email.send({
           from: `${ctx.company.name} <${process.env.PORTAL_EMAIL_FROM ?? `no-reply@${platformDomain()}`}>`,

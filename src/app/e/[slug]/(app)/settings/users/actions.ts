@@ -1,7 +1,8 @@
 "use server";
 
 import { act, changed, text, UserError, uuid } from "@/server/act";
-import { AuthNotConfiguredError, userForInvitation } from "@/server/auth";
+import { AuthError, AuthNotConfiguredError, userForInvitation } from "@/server/auth";
+import { platformOrigins } from "@/server/domains";
 
 // P3: inviting people and managing their access. Row-level security and the
 // membership rules in the database (last owner, owner-only owner changes,
@@ -16,17 +17,29 @@ function userType(form: FormData): "full" | "light" {
 }
 
 export async function inviteUser(slug: string, form: FormData): Promise<never> {
-  return act(slug, PATH, "Invitation sent. They will see it when they sign in.", async (q, ctx) => {
-    let invited: { id: string; email: string };
-    try {
-      invited = await userForInvitation(text(form, "email"));
-    } catch (e) {
-      if (e instanceof AuthNotConfiguredError) throw new UserError("Invitations need sign-in to be connected first.");
-      throw new UserError(e instanceof Error ? e.message : "Please enter a valid email address.");
-    }
-    if (invited.id === ctx.userId) throw new UserError("You are already a member.");
-    await q("select public.invite_member($1, $2, $3, $4)", [ctx.company.id, invited.id, uuid(form, "role_id", "a role"), userType(form)]);
-  });
+  let message = "";
+  return act(
+    slug,
+    PATH,
+    "",
+    async (q, ctx) => {
+      let invited: { id: string; email: string; emailed: boolean };
+      try {
+        // A new person gets an email from Supabase with a link to choose a password.
+        invited = await userForInvitation(text(form, "email"), `${(await platformOrigins(slug)).erp}/auth/callback`);
+      } catch (e) {
+        if (e instanceof AuthNotConfiguredError) throw new UserError("Invitations need sign-in to be connected first.");
+        if (e instanceof AuthError) throw new UserError(e.message);
+        throw new UserError(e instanceof Error ? e.message : "Please enter a valid email address.");
+      }
+      if (invited.id === ctx.userId) throw new UserError("You are already a member.");
+      await q("select public.invite_member($1, $2, $3, $4)", [ctx.company.id, invited.id, uuid(form, "role_id", "a role"), userType(form)]);
+      message = invited.emailed
+        ? `Invitation emailed to ${invited.email}. They choose a password from the link, then accept.`
+        : `Invitation sent to ${invited.email}. They will see it when they sign in.`;
+    },
+    { then: () => `${PATH}?${new URLSearchParams({ success: message })}` },
+  );
 }
 
 export async function updateMember(slug: string, form: FormData): Promise<never> {
