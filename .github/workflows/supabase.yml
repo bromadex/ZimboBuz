@@ -1,0 +1,78 @@
+name: Supabase
+
+# Applies supabase/migrations to the zimERP Supabase project and checks the
+# live database (supabase/deploy). Needs the repository secret SUPABASE_DB_URL:
+# the project's Session pooler connection string (Supabase → Connect).
+#
+# - Run by hand (Actions → Supabase → Run workflow): "check" lists what is
+#   waiting and checks the database; "apply" applies waiting migrations first.
+# - On a push to the working branch that changes migrations: "check" only,
+#   unless the latest commit message contains [supabase apply].
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "check (read only) or apply (run waiting migrations, then check)"
+        type: choice
+        options: [check, apply]
+        default: check
+  push:
+    branches: [claude/determined-meitner-y0yzrm]
+    paths:
+      - supabase/migrations/**
+      - supabase/deploy/**
+      - .github/workflows/supabase.yml
+
+permissions:
+  contents: read
+
+# One run at a time against the live database; never cancel one half-way.
+concurrency:
+  group: supabase-production
+  cancel-in-progress: false
+
+jobs:
+  supabase:
+    name: Migrations and checks on Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      INPUT_MODE: ${{ inputs.mode }}
+      COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decide what to do
+        id: mode
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::warning::The SUPABASE_DB_URL secret is not set, so there is nothing to do."
+            echo "mode=skip" >> "$GITHUB_OUTPUT"
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "mode=${INPUT_MODE:-check}" >> "$GITHUB_OUTPUT"
+          elif printf '%s' "$COMMIT_MESSAGE" | grep -qF '[supabase apply]'; then
+            echo "mode=apply" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=check" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install the PostgreSQL client
+        if: steps.mode.outputs.mode != 'skip'
+        run: command -v psql >/dev/null || (sudo apt-get update -q && sudo apt-get install -y -q postgresql-client)
+
+      - name: Migrations (${{ steps.mode.outputs.mode }})
+        id: migrate
+        if: steps.mode.outputs.mode != 'skip'
+        run: |
+          supabase/deploy/migrate.sh "${{ steps.mode.outputs.mode }}" | tee migrate.log
+          echo "pending=$(tail -n 1 migrate.log | sed 's/^pending=//')" >> "$GITHUB_OUTPUT"
+
+      - name: Check the live database
+        if: steps.mode.outputs.mode != 'skip' && steps.migrate.outputs.pending == '0'
+        run: psql "$SUPABASE_DB_URL" -X -q -v ON_ERROR_STOP=1 -f supabase/deploy/checks.sql
+
+      - name: Migrations still waiting
+        if: steps.mode.outputs.mode == 'check' && steps.migrate.outputs.pending != '0'
+        run: echo "::notice::${{ steps.migrate.outputs.pending }} migration(s) are waiting. Run the workflow with mode 'apply' to apply them; the checks run after that."
