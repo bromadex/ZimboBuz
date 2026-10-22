@@ -1,6 +1,7 @@
 // Request routing by hostname (issue #23, master plan §12.6).
 //
 //   zimerp.co.zw, www.zimerp.co.zw, localhost      → ZimERP's own site
+//   <anything>.vercel.app (hosting addresses)      → ZimERP's own site
 //   <slug>.zimerp.co.zw                            → the company's website and store
 //   erp.<slug>.zimerp.co.zw                        → the company's ERP
 //   www.mhofu.co.zw / mhofu.co.zw (verified)       → website and store
@@ -29,6 +30,10 @@ export function classifyHost(rawHost: string | null | undefined, platformDomain:
   if (host === platform || host === `www.${platform}` || host === "localhost" || host === "127.0.0.1") {
     return { kind: "platform" };
   }
+  // The hosting provider's own addresses (zimerp-abc123.vercel.app) show
+  // ZimERP's own pages; companies are only ever reached on the platform
+  // domain or their own domains.
+  if (host.endsWith(".vercel.app")) return { kind: "platform" };
 
   if (host.endsWith(`.${platform}`)) {
     const parts = host.slice(0, -(platform.length + 1)).split(".");

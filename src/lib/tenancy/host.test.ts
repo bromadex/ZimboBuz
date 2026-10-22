@@ -8,6 +8,7 @@ describe("classifyHost", () => {
     ["zimerp.co.zw", { kind: "platform" }],
     ["www.zimerp.co.zw", { kind: "platform" }],
     ["localhost:3000", { kind: "platform" }],
+    ["zimerp-git-main-abc.vercel.app", { kind: "platform" }],
     ["api.zimerp.co.zw", { kind: "platform" }],
     ["mhofu.zimerp.co.zw", { kind: "tenant", area: "site", lookupHost: "mhofu.zimerp.co.zw", custom: false }],
     ["MHOFU.zimerp.co.zw:443", { kind: "tenant", area: "site", lookupHost: "mhofu.zimerp.co.zw", custom: false }],
