@@ -11,6 +11,7 @@ import {
   supabaseLookup,
   type SiteLookup,
 } from "@/lib/tenancy/host";
+import { decideSingleHost, singleHost, VIEW_COOKIE, viewValue } from "@/lib/tenancy/single-host";
 import { getPool } from "@/server/db";
 import { sessionSecret } from "@/server/session";
 
@@ -75,6 +76,34 @@ export async function proxy(request: NextRequest) {
 
   const headers = new Headers(request.headers);
   for (const name of ROUTING_HEADERS) headers.delete(name);
+
+  // Test mode on one address (src/lib/tenancy/single-host.ts).
+  const single = singleHost();
+  if (single && (request.headers.get("host") ?? "").toLowerCase() === single) {
+    const decision = decideSingleHost(pathname, request.cookies.get(VIEW_COOKIE)?.value);
+    const proto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || request.nextUrl.protocol.replace(":", "");
+    const cookie = { httpOnly: true, sameSite: "lax" as const, secure: proto === "https", path: "/", maxAge: 30 * 24 * 60 * 60 };
+    if (decision.kind === "enter") {
+      // The browser keeps any #fragment (sign-in email links) across this redirect.
+      const response = NextResponse.redirect(`${proto}://${single}${decision.rest}${search}`, 303);
+      response.cookies.set(VIEW_COOKIE, viewValue(decision.area, decision.slug), cookie);
+      return response;
+    }
+    if (decision.kind === "leave") {
+      const response = NextResponse.redirect(`${proto}://${single}/`, 303);
+      response.cookies.delete(VIEW_COOKIE);
+      return response;
+    }
+    if (decision.kind === "platform") return internal ? notFound() : NextResponse.next({ request: { headers } });
+    if (internal) return notFound();
+    const url = request.nextUrl.clone();
+    url.pathname = `${decision.area === "erp" ? "/e" : "/s"}/${decision.slug}${pathname === "/" ? "" : pathname}`;
+    url.search = search;
+    headers.set("x-zimerp-route", routeToken());
+    headers.set("x-zimerp-company", decision.slug);
+    headers.set("x-zimerp-area", decision.area === "erp" ? "erp" : "site");
+    return NextResponse.rewrite(url, { request: { headers } });
+  }
 
   const target = classifyHost(request.headers.get("host"), platformDomain);
   if (target.kind === "invalid") return notFound();

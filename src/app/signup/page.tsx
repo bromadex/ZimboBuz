@@ -3,6 +3,7 @@ import { Button, Card, Field, Notice, SelectField } from "@/components/ui";
 import { MIN_PASSWORD } from "@/server/adapters/supabase-auth";
 import { authMode } from "@/server/auth";
 import { listIndustries, listModules, listPlans } from "@/server/industries";
+import { singleHost } from "@/lib/tenancy/single-host";
 import { platformDomain } from "@/server/urls";
 import { signUp } from "./actions";
 import { IndustryPicker } from "./industry-picker";
@@ -21,6 +22,7 @@ export default async function SignUpPage({ searchParams }: PageProps<"/signup">)
   const sp = await searchParams;
   const value = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
   const domain = platformDomain();
+  const single = singleHost();
   const devAuth = authMode() === "dev";
   const [industries, plans, moduleRows] = await Promise.all([listIndustries(), listPlans(), listModules()]);
   const modules = moduleRows.map((m) => ({ ...m, hint: HINTS[m.code] }));
@@ -64,7 +66,11 @@ export default async function SignUpPage({ searchParams }: PageProps<"/signup">)
               pattern="[a-z0-9]([a-z0-9\-]{0,40}[a-z0-9])?"
               defaultValue={value("slug")}
               placeholder="mhofu"
-              hint={`Your website will be at <name>.${domain} and your ERP at erp.<name>.${domain}. Lower-case letters, numbers and hyphens.`}
+              hint={
+                single
+                  ? `Your ERP will be at ${single}/erp/<name> and your website at ${single}/site/<name> (test address). Lower-case letters, numbers and hyphens.`
+                  : `Your website will be at <name>.${domain} and your ERP at erp.<name>.${domain}. Lower-case letters, numbers and hyphens.`
+              }
             />
             <Field
               label="Your own domain (optional)"

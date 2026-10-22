@@ -8,6 +8,12 @@ describe("company addresses", () => {
     expect(siteOrigin("mhofu", "zimerp.test", "zimerp.test:3000", "http")).toBe("http://mhofu.zimerp.test:3000");
   });
 
+  it("uses paths on one address in test mode", () => {
+    const env = { ZIMERP_SINGLE_HOST: "zimerp.vercel.app" };
+    expect(erpOrigin("mhofu", "zimerp.co.zw", "zimerp.vercel.app", "https", env)).toBe("https://zimerp.vercel.app/erp/mhofu");
+    expect(siteOrigin("mhofu", "zimerp.co.zw", "zimerp.vercel.app", "https", env)).toBe("https://zimerp.vercel.app/site/mhofu");
+  });
+
   it("reads the platform domain and protocol", () => {
     expect(platformDomain({})).toBe("zimerp.co.zw");
     expect(platformDomain({ ZIMERP_PLATFORM_DOMAIN: "Staging.ZimERP.co.zw" })).toBe("staging.zimerp.co.zw");

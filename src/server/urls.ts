@@ -1,3 +1,5 @@
+import { singleHost } from "@/lib/tenancy/single-host";
+
 // Addresses of a company's ERP and website, built from the request so the
 // same code works on zimerp.co.zw, on a staging domain and on localhost ports.
 
@@ -16,13 +18,29 @@ export function requestProtocol(forwardedProto: string | null | undefined, nodeE
   return nodeEnv === "production" ? "https" : "http";
 }
 
-/** https://erp.<slug>.<platform>[:port] */
-export function erpOrigin(slug: string, platform: string, requestHost: string | null, protocol: "http" | "https"): string {
+/** https://erp.<slug>.<platform>[:port]; in test mode on one address, https://<host>/erp/<slug>. */
+export function erpOrigin(
+  slug: string,
+  platform: string,
+  requestHost: string | null,
+  protocol: "http" | "https",
+  env: Record<string, string | undefined> = process.env,
+): string {
+  const single = singleHost(env);
+  if (single) return `${protocol}://${single}/erp/${slug}`;
   return `${protocol}://erp.${slug}.${platform}${portOf(requestHost)}`;
 }
 
-/** https://<slug>.<platform>[:port] */
-export function siteOrigin(slug: string, platform: string, requestHost: string | null, protocol: "http" | "https"): string {
+/** https://<slug>.<platform>[:port]; in test mode on one address, https://<host>/site/<slug>. */
+export function siteOrigin(
+  slug: string,
+  platform: string,
+  requestHost: string | null,
+  protocol: "http" | "https",
+  env: Record<string, string | undefined> = process.env,
+): string {
+  const single = singleHost(env);
+  if (single) return `${protocol}://${single}/site/${slug}`;
   return `${protocol}://${slug}.${platform}${portOf(requestHost)}`;
 }
 

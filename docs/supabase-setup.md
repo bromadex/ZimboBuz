@@ -67,3 +67,18 @@ public files itself and only those registered as public.
 - Until the platform domain is bought, the `*.vercel.app` address shows
   ZimERP's own pages; company websites and ERPs need the domain's
   subdomains.
+
+## 5. Test mode on one address (before the domain is bought)
+
+Set `ZIMERP_SINGLE_HOST=zimerp.vercel.app` in Vercel. Then:
+
+- `zimerp.vercel.app/signup` creates a company as usual;
+- `zimerp.vercel.app/erp/<name>` opens that company's ERP, and
+  `zimerp.vercel.app/site/<name>` its website and customer portal;
+- a bar at the top shows which company and area the browser is on, with
+  links to switch and to go back to ZimERP (`/leave`).
+
+One browser looks at one area at a time. In Supabase (Authentication → URL
+Configuration) use Site URL `https://zimerp.vercel.app` and redirect URL
+`https://zimerp.vercel.app/**`. Remove the variable once the real domain is
+live; nothing else changes.

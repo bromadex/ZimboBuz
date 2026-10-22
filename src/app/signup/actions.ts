@@ -11,6 +11,8 @@ import { allow, TOO_MANY } from "@/server/rate-limit";
 import { friendlyError, withUser } from "@/server/data";
 import { createSessionToken, sessionSecret } from "@/server/session";
 import { adapters } from "@/server/web/services";
+import { normaliseHost } from "@/lib/tenancy/host";
+import { singleHost } from "@/lib/tenancy/single-host";
 import { erpOrigin, platformDomain, requestProtocol } from "@/server/urls";
 
 const PLANS = new Set(["starter", "business", "growth", "pro", "enterprise"]);
@@ -113,6 +115,6 @@ export async function signUp(formData: FormData): Promise<never> {
 
   // Cookies belong to one host, so the ERP host signs the owner in from a
   // short-lived token that only it accepts.
-  const token = createSessionToken(userId, sessionSecret(), 120, Date.now(), `erp.${slug}.${platform}`);
+  const token = createSessionToken(userId, sessionSecret(), 120, Date.now(), normaliseHost(singleHost()) || `erp.${slug}.${platform}`);
   redirect(`${origin}/api/auth/handoff?token=${encodeURIComponent(token)}`);
 }
