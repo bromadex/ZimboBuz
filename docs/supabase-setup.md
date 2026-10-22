@@ -54,3 +54,16 @@ public files itself and only those registered as public.
   database as that user, so row-level security decides everything they see.
 - Email links land on `/auth/callback` (ERP) or `/account/auth` (customer
   portal), which confirm the address or ask for a new password.
+
+## 4. Vercel project
+
+- Import `bromadex/ZimboBuz` (framework preset: Next.js, root `./`).
+- Production branch: the branch that holds the app (today
+  `claude/determined-meitner-y0yzrm`; `main` until the work is merged).
+  Vercel only offers a branch once it has built it at least once.
+- Add the variables from section 3 under Settings → Environment Variables.
+- `vercel.json` pins the functions to Dublin (`dub1`), next to the Supabase
+  database in Ireland.
+- Until the platform domain is bought, the `*.vercel.app` address shows
+  ZimERP's own pages; company websites and ERPs need the domain's
+  subdomains.
