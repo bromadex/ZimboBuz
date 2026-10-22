@@ -5,7 +5,10 @@ name: Supabase
 # the project's Session pooler connection string (Supabase → Connect).
 #
 # - Run by hand (Actions → Supabase → Run workflow): "check" lists what is
-#   waiting and checks the database; "apply" applies waiting migrations first.
+#   waiting and checks the database; "apply" applies waiting migrations first;
+#   "list-accounts" shows companies and masked sign-in accounts;
+#   "remove-company" removes one test or mistaken company (a practice run
+#   unless "confirm" is ticked).
 # - On a push to the working branch that changes migrations: "check" only,
 #   unless the latest commit message contains [supabase apply].
 
@@ -13,10 +16,18 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "check (read only) or apply (run waiting migrations, then check)"
+        description: "check (read only), apply (run waiting migrations, then check), list-accounts (read only), remove-company"
         type: choice
-        options: [check, apply]
+        options: [check, apply, list-accounts, remove-company]
         default: check
+      slug:
+        description: "remove-company only: the company's web address name (e.g. kuda)"
+        type: string
+        default: ""
+      confirm:
+        description: "remove-company only: tick to really remove it (otherwise a practice run)"
+        type: boolean
+        default: false
   push:
     branches: [claude/determined-meitner-y0yzrm]
     paths:
@@ -40,6 +51,8 @@ jobs:
     env:
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
       INPUT_MODE: ${{ inputs.mode }}
+      INPUT_SLUG: ${{ inputs.slug }}
+      INPUT_CONFIRM: ${{ inputs.confirm }}
       COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
     steps:
       - uses: actions/checkout@v4
@@ -62,15 +75,28 @@ jobs:
         if: steps.mode.outputs.mode != 'skip'
         run: command -v psql >/dev/null || (sudo apt-get update -q && sudo apt-get install -y -q postgresql-client)
 
+      - name: List companies and accounts
+        if: steps.mode.outputs.mode == 'list-accounts'
+        run: psql "$SUPABASE_DB_URL" -X -q -v ON_ERROR_STOP=1 -f supabase/deploy/list-accounts.sql
+
+      - name: Remove a company
+        if: steps.mode.outputs.mode == 'remove-company'
+        run: |
+          if ! printf '%s' "$INPUT_SLUG" | grep -Eq '^[a-z0-9]([a-z0-9-]{0,40}[a-z0-9])?$'; then
+            echo "::error::Please give the company's web address name, for example kuda."; exit 1
+          fi
+          really=false; [ "$INPUT_CONFIRM" = "true" ] && really=true
+          psql "$SUPABASE_DB_URL" -X -q -v ON_ERROR_STOP=1 -v slug="$INPUT_SLUG" -v really="$really" -f supabase/deploy/remove-company.sql
+
       - name: Migrations (${{ steps.mode.outputs.mode }})
         id: migrate
-        if: steps.mode.outputs.mode != 'skip'
+        if: steps.mode.outputs.mode == 'check' || steps.mode.outputs.mode == 'apply'
         run: |
           supabase/deploy/migrate.sh "${{ steps.mode.outputs.mode }}" | tee migrate.log
           echo "pending=$(tail -n 1 migrate.log | sed 's/^pending=//')" >> "$GITHUB_OUTPUT"
 
       - name: Check the live database
-        if: steps.mode.outputs.mode != 'skip' && steps.migrate.outputs.pending == '0'
+        if: (steps.mode.outputs.mode == 'check' || steps.mode.outputs.mode == 'apply') && steps.migrate.outputs.pending == '0'
         run: psql "$SUPABASE_DB_URL" -X -q -v ON_ERROR_STOP=1 -f supabase/deploy/checks.sql
 
       - name: Migrations still waiting
